@@ -25,6 +25,20 @@ Future<String> _encodeYaml<T>(T content) async {
   return yaml.encode(content);
 }
 
+/// Parsing a subscription is linear in its size and megabytes are normal, so
+/// it stays off the isolate that draws.
+Future<Object?> decodeYamlTask(String source) async {
+  return compute<String, Object?>(_decodeYaml, source);
+}
+
+Object? _decodeYaml(String source) {
+  try {
+    return loadPlainYaml(source);
+  } catch (_) {
+    return null;
+  }
+}
+
 /// Throws [FormatException] when the file is not UTF-8.
 Future<String?> readTextFileTask(String path) {
   return compute(_readTextFile, path);
@@ -373,8 +387,69 @@ Future<RealProfile> _makeRealProfileTask(MakeRealProfileState data) async {
         .toList();
   }
   rawConfig['rules'] = rules;
+  _dropDisabledGroups(rawConfig, data.disabledGroups);
   final yaml = await _encodeYaml(Map<String, dynamic>.from(rawConfig));
   return (yaml: yaml, md5: yaml.toMd5(), counts: configCountsOf(rawConfig));
+}
+
+/// mihomo refuses a group or a rule that names something not there, so a
+/// group switched off takes its rules and the members naming it with it.
+void _dropDisabledGroups(Map<dynamic, dynamic> config, Set<String> disabled) {
+  if (disabled.isEmpty) {
+    return;
+  }
+  final rawGroups = config['proxy-groups'];
+  if (rawGroups is! List) {
+    return;
+  }
+  final names = {
+    for (final group in rawGroups)
+      if (group is Map && group['name'] is String) group['name'] as String,
+  };
+  final removed = disabled.where(names.contains).toSet();
+  if (removed.isEmpty) {
+    return;
+  }
+  final kept = <Object?>[];
+  for (final group in rawGroups) {
+    if (group is! Map) {
+      kept.add(group);
+      continue;
+    }
+    if (removed.contains(group['name'])) {
+      continue;
+    }
+    final members = group['proxies'];
+    if (members is List && members.any(removed.contains)) {
+      kept.add(
+        Map<Object?, Object?>.from(group)
+          ..['proxies'] = [
+            for (final member in members)
+              if (!removed.contains(member)) member,
+          ],
+      );
+      continue;
+    }
+    kept.add(group);
+  }
+  config['proxy-groups'] = kept;
+  final rules = config['rules'];
+  if (rules is List) {
+    config['rules'] = [
+      for (final rule in rules)
+        if (rule is! String || !removed.contains(Rule.parse(rule).ruleTarget))
+          rule,
+    ];
+  }
+  final proxies = config['proxies'];
+  if (proxies is List) {
+    for (var i = 0; i < proxies.length; i++) {
+      final proxy = proxies[i];
+      if (proxy is Map && removed.contains(proxy['dialer-proxy'])) {
+        proxies[i] = Map<Object?, Object?>.from(proxy)..remove('dialer-proxy');
+      }
+    }
+  }
 }
 
 typedef ShakingStoreArgs = ({

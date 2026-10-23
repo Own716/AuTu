@@ -5125,7 +5125,9 @@ as String,
 /// @nodoc
 mixin _$Script {
 
- int get id; String get label; DateTime get lastUpdateTime; String? get url; int? get order;
+ int get id; String get label; DateTime get lastUpdateTime; String? get url; int? get order;/// The switches the reader set in the rule options sheet, keyed by the
+/// name the script declares in its `ruleOptionsEnable` table.
+ Map<String, bool> get customOptions;
 /// Create a copy of Script
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -5139,20 +5141,20 @@ $ScriptCopyWith<Script> get copyWith => _$ScriptCopyWithImpl<Script>(this as Scr
 @override
 bool operator ==(Object other) {
   final _this = this as Script;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Script&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.label, _this.label) || other.label == _this.label)&&(identical(other.lastUpdateTime, _this.lastUpdateTime) || other.lastUpdateTime == _this.lastUpdateTime)&&(identical(other.url, _this.url) || other.url == _this.url)&&(identical(other.order, _this.order) || other.order == _this.order));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Script&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.label, _this.label) || other.label == _this.label)&&(identical(other.lastUpdateTime, _this.lastUpdateTime) || other.lastUpdateTime == _this.lastUpdateTime)&&(identical(other.url, _this.url) || other.url == _this.url)&&(identical(other.order, _this.order) || other.order == _this.order)&&const DeepCollectionEquality().equals(other.customOptions, _this.customOptions));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as Script;
-  return Object.hash(runtimeType,_this.id,_this.label,_this.lastUpdateTime,_this.url,_this.order);
+  return Object.hash(runtimeType,_this.id,_this.label,_this.lastUpdateTime,_this.url,_this.order,const DeepCollectionEquality().hash(_this.customOptions));
 }
 
 @override
 String toString() {
   final _this = this as Script;
-  return 'Script(id: ${_this.id}, label: ${_this.label}, lastUpdateTime: ${_this.lastUpdateTime}, url: ${_this.url}, order: ${_this.order})';
+  return 'Script(id: ${_this.id}, label: ${_this.label}, lastUpdateTime: ${_this.lastUpdateTime}, url: ${_this.url}, order: ${_this.order}, customOptions: ${_this.customOptions})';
 }
 
 
@@ -5163,7 +5165,7 @@ abstract mixin class $ScriptCopyWith<$Res>  {
   factory $ScriptCopyWith(Script value, $Res Function(Script) _then) = _$ScriptCopyWithImpl;
 @useResult
 $Res call({
- int id, String label, DateTime lastUpdateTime, String? url, int? order
+ int id, String label, DateTime lastUpdateTime, String? url, int? order, Map<String, bool> customOptions
 });
 
 
@@ -5180,14 +5182,15 @@ class _$ScriptCopyWithImpl<$Res>
 
 /// Create a copy of Script
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? label = null,Object? lastUpdateTime = null,Object? url = freezed,Object? order = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? label = null,Object? lastUpdateTime = null,Object? url = freezed,Object? order = freezed,Object? customOptions = null,}) {
   return _then(Script(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,label: null == label ? _self.label : label // ignore: cast_nullable_to_non_nullable
 as String,lastUpdateTime: null == lastUpdateTime ? _self.lastUpdateTime : lastUpdateTime // ignore: cast_nullable_to_non_nullable
 as DateTime,url: freezed == url ? _self.url : url // ignore: cast_nullable_to_non_nullable
 as String?,order: freezed == order ? _self.order : order // ignore: cast_nullable_to_non_nullable
-as int?,
+as int?,customOptions: null == customOptions ? _self.customOptions : customOptions // ignore: cast_nullable_to_non_nullable
+as Map<String, bool>,
   ));
 }
 
@@ -5272,10 +5275,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String label,  DateTime lastUpdateTime,  String? url,  int? order)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String label,  DateTime lastUpdateTime,  String? url,  int? order,  Map<String, bool> customOptions)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Script() when $default != null:
-return $default(_that.id,_that.label,_that.lastUpdateTime,_that.url,_that.order);case _:
+return $default(_that.id,_that.label,_that.lastUpdateTime,_that.url,_that.order,_that.customOptions);case _:
   return orElse();
 
 }
@@ -5293,10 +5296,10 @@ return $default(_that.id,_that.label,_that.lastUpdateTime,_that.url,_that.order)
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String label,  DateTime lastUpdateTime,  String? url,  int? order)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String label,  DateTime lastUpdateTime,  String? url,  int? order,  Map<String, bool> customOptions)  $default,) {final _that = this;
 switch (_that) {
 case _Script():
-return $default(_that.id,_that.label,_that.lastUpdateTime,_that.url,_that.order);case _:
+return $default(_that.id,_that.label,_that.lastUpdateTime,_that.url,_that.order,_that.customOptions);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -5313,10 +5316,10 @@ return $default(_that.id,_that.label,_that.lastUpdateTime,_that.url,_that.order)
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String label,  DateTime lastUpdateTime,  String? url,  int? order)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String label,  DateTime lastUpdateTime,  String? url,  int? order,  Map<String, bool> customOptions)?  $default,) {final _that = this;
 switch (_that) {
 case _Script() when $default != null:
-return $default(_that.id,_that.label,_that.lastUpdateTime,_that.url,_that.order);case _:
+return $default(_that.id,_that.label,_that.lastUpdateTime,_that.url,_that.order,_that.customOptions);case _:
   return null;
 
 }
@@ -5328,7 +5331,7 @@ return $default(_that.id,_that.label,_that.lastUpdateTime,_that.url,_that.order)
 @JsonSerializable()
 
 class _Script implements Script {
-  const _Script({required this.id, required this.label, required this.lastUpdateTime, this.url, this.order});
+  const _Script({required this.id, required this.label, required this.lastUpdateTime, this.url, this.order,  Map<String, bool> customOptions = const <String, bool>{}}): _customOptions = customOptions;
   factory _Script.fromJson(Map<String, dynamic> json) => _$ScriptFromJson(json);
 
 @override final  int id;
@@ -5336,6 +5339,17 @@ class _Script implements Script {
 @override final  DateTime lastUpdateTime;
 @override final  String? url;
 @override final  int? order;
+/// The switches the reader set in the rule options sheet, keyed by the
+/// name the script declares in its `ruleOptionsEnable` table.
+ final  Map<String, bool> _customOptions;
+/// The switches the reader set in the rule options sheet, keyed by the
+/// name the script declares in its `ruleOptionsEnable` table.
+@override@JsonKey() Map<String, bool> get customOptions {
+  if (_customOptions is EqualUnmodifiableMapView) return _customOptions;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableMapView(_customOptions);
+}
+
 
 /// Create a copy of Script
 /// with the given fields replaced by the non-null parameter values.
@@ -5350,18 +5364,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _Script&&(identical(other.id, id) || other.id == id)&&(identical(other.label, label) || other.label == label)&&(identical(other.lastUpdateTime, lastUpdateTime) || other.lastUpdateTime == lastUpdateTime)&&(identical(other.url, url) || other.url == url)&&(identical(other.order, order) || other.order == order));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _Script&&(identical(other.id, id) || other.id == id)&&(identical(other.label, label) || other.label == label)&&(identical(other.lastUpdateTime, lastUpdateTime) || other.lastUpdateTime == lastUpdateTime)&&(identical(other.url, url) || other.url == url)&&(identical(other.order, order) || other.order == order)&&const DeepCollectionEquality().equals(other.customOptions, _customOptions));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,id,label,lastUpdateTime,url,order);
+    return Object.hash(runtimeType,id,label,lastUpdateTime,url,order,const DeepCollectionEquality().hash(_customOptions));
 }
 
 @override
 String toString() {
-    return 'Script(id: $id, label: $label, lastUpdateTime: $lastUpdateTime, url: $url, order: $order)';
+    return 'Script(id: $id, label: $label, lastUpdateTime: $lastUpdateTime, url: $url, order: $order, customOptions: $customOptions)';
 }
 
 
@@ -5372,7 +5386,7 @@ abstract mixin class _$ScriptCopyWith<$Res> implements $ScriptCopyWith<$Res> {
   factory _$ScriptCopyWith(_Script value, $Res Function(_Script) _then) = __$ScriptCopyWithImpl;
 @override @useResult
 $Res call({
- int id, String label, DateTime lastUpdateTime, String? url, int? order
+ int id, String label, DateTime lastUpdateTime, String? url, int? order, Map<String, bool> customOptions
 });
 
 
@@ -5389,14 +5403,15 @@ class __$ScriptCopyWithImpl<$Res>
 
 /// Create a copy of Script
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? label = null,Object? lastUpdateTime = null,Object? url = freezed,Object? order = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? label = null,Object? lastUpdateTime = null,Object? url = freezed,Object? order = freezed,Object? customOptions = null,}) {
   return _then(_Script(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,label: null == label ? _self.label : label // ignore: cast_nullable_to_non_nullable
 as String,lastUpdateTime: null == lastUpdateTime ? _self.lastUpdateTime : lastUpdateTime // ignore: cast_nullable_to_non_nullable
 as DateTime,url: freezed == url ? _self.url : url // ignore: cast_nullable_to_non_nullable
 as String?,order: freezed == order ? _self.order : order // ignore: cast_nullable_to_non_nullable
-as int?,
+as int?,customOptions: null == customOptions ? _self._customOptions : customOptions // ignore: cast_nullable_to_non_nullable
+as Map<String, bool>,
   ));
 }
 

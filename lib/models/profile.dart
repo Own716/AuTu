@@ -79,6 +79,11 @@ abstract class Profile with _$Profile {
     int? scriptId,
     String? matchTarget,
     int? order,
+
+    /// Policy groups the reader switched off in the YAML rule switches. The
+    /// build drops them, the groups that name them, and the rules that point
+    /// at them.
+    @Default(<String>{}) Set<String> disabledGroups,
     @Default(ProfileOverrides())
     @JsonKey(fromJson: ProfileOverrides.safeFromJson)
     ProfileOverrides overrides,

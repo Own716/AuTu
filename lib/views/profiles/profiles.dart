@@ -510,6 +510,8 @@ class ProfileItem extends ConsumerWidget {
           title: _ProfileCardTitle(
             profile: profile,
             expire: subscriptionInfo?.expireDate,
+            // A subscription that reported a quota and no expiry never ends.
+            permanent: (subscriptionInfo?.total ?? 0) > 0,
             subtitle: _subtitle(context),
           ),
         ),
@@ -522,11 +524,13 @@ class _ProfileCardTitle extends StatelessWidget {
   const _ProfileCardTitle({
     required this.profile,
     required this.expire,
+    required this.permanent,
     required this.subtitle,
   });
 
   final Profile profile;
   final DateTime? expire;
+  final bool permanent;
   final String subtitle;
 
   @override
@@ -538,6 +542,7 @@ class _ProfileCardTitle extends StatelessWidget {
         ChipTitle(
           title: profile.realLabel,
           expire: expire,
+          permanent: permanent,
           style: AppTextStyle.headline.of(context),
         ),
         const SizedBox(height: _infoGap),

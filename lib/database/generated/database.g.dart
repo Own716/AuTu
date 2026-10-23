@@ -171,6 +171,17 @@ class $ProfilesTable extends Profiles
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _disabledGroupsMeta = const VerificationMeta(
+    'disabledGroups',
+  );
+  @override
+  late final GeneratedColumn<String> disabledGroups = GeneratedColumn<String>(
+    'disabled_groups',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   late final GeneratedColumnWithTypeConverter<ProfileOverrides?, String>
   overrides = GeneratedColumn<String>(
@@ -198,6 +209,7 @@ class $ProfilesTable extends Profiles
     selectedMap,
     unfoldSet,
     order,
+    disabledGroups,
     overrides,
   ];
   @override
@@ -298,6 +310,15 @@ class $ProfilesTable extends Profiles
         order.isAcceptableOrUnknown(data['order']!, _orderMeta),
       );
     }
+    if (data.containsKey('disabled_groups')) {
+      context.handle(
+        _disabledGroupsMeta,
+        disabledGroups.isAcceptableOrUnknown(
+          data['disabled_groups']!,
+          _disabledGroupsMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -381,6 +402,10 @@ class $ProfilesTable extends Profiles
         DriftSqlType.int,
         data['${effectivePrefix}order'],
       ),
+      disabledGroups: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}disabled_groups'],
+      ),
       overrides: $ProfilesTable.$converteroverrides.fromSql(
         attachedDatabase.typeMapping.read(
           DriftSqlType.string,
@@ -426,6 +451,7 @@ class RawProfile extends DataClass implements Insertable<RawProfile> {
   final Map<String, String> selectedMap;
   final Set<String> unfoldSet;
   final int? order;
+  final String? disabledGroups;
   final ProfileOverrides? overrides;
   const RawProfile({
     required this.id,
@@ -444,6 +470,7 @@ class RawProfile extends DataClass implements Insertable<RawProfile> {
     required this.selectedMap,
     required this.unfoldSet,
     this.order,
+    this.disabledGroups,
     this.overrides,
   });
   @override
@@ -497,6 +524,9 @@ class RawProfile extends DataClass implements Insertable<RawProfile> {
     if (!nullToAbsent || order != null) {
       map['order'] = Variable<int>(order);
     }
+    if (!nullToAbsent || disabledGroups != null) {
+      map['disabled_groups'] = Variable<String>(disabledGroups);
+    }
     if (!nullToAbsent || overrides != null) {
       map['overrides'] = Variable<String>(
         $ProfilesTable.$converteroverrides.toSql(overrides),
@@ -537,6 +567,9 @@ class RawProfile extends DataClass implements Insertable<RawProfile> {
       order: order == null && nullToAbsent
           ? const Value.absent()
           : Value(order),
+      disabledGroups: disabledGroups == null && nullToAbsent
+          ? const Value.absent()
+          : Value(disabledGroups),
       overrides: overrides == null && nullToAbsent
           ? const Value.absent()
           : Value(overrides),
@@ -575,6 +608,7 @@ class RawProfile extends DataClass implements Insertable<RawProfile> {
       ),
       unfoldSet: serializer.fromJson<Set<String>>(json['unfoldSet']),
       order: serializer.fromJson<int?>(json['order']),
+      disabledGroups: serializer.fromJson<String?>(json['disabledGroups']),
       overrides: serializer.fromJson<ProfileOverrides?>(json['overrides']),
     );
   }
@@ -606,6 +640,7 @@ class RawProfile extends DataClass implements Insertable<RawProfile> {
       'selectedMap': serializer.toJson<Map<String, String>>(selectedMap),
       'unfoldSet': serializer.toJson<Set<String>>(unfoldSet),
       'order': serializer.toJson<int?>(order),
+      'disabledGroups': serializer.toJson<String?>(disabledGroups),
       'overrides': serializer.toJson<ProfileOverrides?>(overrides),
     };
   }
@@ -627,6 +662,7 @@ class RawProfile extends DataClass implements Insertable<RawProfile> {
     Map<String, String>? selectedMap,
     Set<String>? unfoldSet,
     Value<int?> order = const Value.absent(),
+    Value<String?> disabledGroups = const Value.absent(),
     Value<ProfileOverrides?> overrides = const Value.absent(),
   }) => RawProfile(
     id: id ?? this.id,
@@ -652,6 +688,9 @@ class RawProfile extends DataClass implements Insertable<RawProfile> {
     selectedMap: selectedMap ?? this.selectedMap,
     unfoldSet: unfoldSet ?? this.unfoldSet,
     order: order.present ? order.value : this.order,
+    disabledGroups: disabledGroups.present
+        ? disabledGroups.value
+        : this.disabledGroups,
     overrides: overrides.present ? overrides.value : this.overrides,
   );
   RawProfile copyWithCompanion(ProfilesCompanion data) {
@@ -690,6 +729,9 @@ class RawProfile extends DataClass implements Insertable<RawProfile> {
           : this.selectedMap,
       unfoldSet: data.unfoldSet.present ? data.unfoldSet.value : this.unfoldSet,
       order: data.order.present ? data.order.value : this.order,
+      disabledGroups: data.disabledGroups.present
+          ? data.disabledGroups.value
+          : this.disabledGroups,
       overrides: data.overrides.present ? data.overrides.value : this.overrides,
     );
   }
@@ -713,6 +755,7 @@ class RawProfile extends DataClass implements Insertable<RawProfile> {
           ..write('selectedMap: $selectedMap, ')
           ..write('unfoldSet: $unfoldSet, ')
           ..write('order: $order, ')
+          ..write('disabledGroups: $disabledGroups, ')
           ..write('overrides: $overrides')
           ..write(')'))
         .toString();
@@ -736,6 +779,7 @@ class RawProfile extends DataClass implements Insertable<RawProfile> {
     selectedMap,
     unfoldSet,
     order,
+    disabledGroups,
     overrides,
   );
   @override
@@ -758,6 +802,7 @@ class RawProfile extends DataClass implements Insertable<RawProfile> {
           other.selectedMap == this.selectedMap &&
           other.unfoldSet == this.unfoldSet &&
           other.order == this.order &&
+          other.disabledGroups == this.disabledGroups &&
           other.overrides == this.overrides);
 }
 
@@ -778,6 +823,7 @@ class ProfilesCompanion extends UpdateCompanion<RawProfile> {
   final Value<Map<String, String>> selectedMap;
   final Value<Set<String>> unfoldSet;
   final Value<int?> order;
+  final Value<String?> disabledGroups;
   final Value<ProfileOverrides?> overrides;
   const ProfilesCompanion({
     this.id = const Value.absent(),
@@ -796,6 +842,7 @@ class ProfilesCompanion extends UpdateCompanion<RawProfile> {
     this.selectedMap = const Value.absent(),
     this.unfoldSet = const Value.absent(),
     this.order = const Value.absent(),
+    this.disabledGroups = const Value.absent(),
     this.overrides = const Value.absent(),
   });
   ProfilesCompanion.insert({
@@ -815,6 +862,7 @@ class ProfilesCompanion extends UpdateCompanion<RawProfile> {
     required Map<String, String> selectedMap,
     required Set<String> unfoldSet,
     this.order = const Value.absent(),
+    this.disabledGroups = const Value.absent(),
     this.overrides = const Value.absent(),
   }) : type = Value(type),
        label = Value(label),
@@ -841,6 +889,7 @@ class ProfilesCompanion extends UpdateCompanion<RawProfile> {
     Expression<String>? selectedMap,
     Expression<String>? unfoldSet,
     Expression<int>? order,
+    Expression<String>? disabledGroups,
     Expression<String>? overrides,
   }) {
     return RawValuesInsertable({
@@ -861,6 +910,7 @@ class ProfilesCompanion extends UpdateCompanion<RawProfile> {
       if (selectedMap != null) 'selected_map': selectedMap,
       if (unfoldSet != null) 'unfold_set': unfoldSet,
       if (order != null) 'order': order,
+      if (disabledGroups != null) 'disabled_groups': disabledGroups,
       if (overrides != null) 'overrides': overrides,
     });
   }
@@ -882,6 +932,7 @@ class ProfilesCompanion extends UpdateCompanion<RawProfile> {
     Value<Map<String, String>>? selectedMap,
     Value<Set<String>>? unfoldSet,
     Value<int?>? order,
+    Value<String?>? disabledGroups,
     Value<ProfileOverrides?>? overrides,
   }) {
     return ProfilesCompanion(
@@ -902,6 +953,7 @@ class ProfilesCompanion extends UpdateCompanion<RawProfile> {
       selectedMap: selectedMap ?? this.selectedMap,
       unfoldSet: unfoldSet ?? this.unfoldSet,
       order: order ?? this.order,
+      disabledGroups: disabledGroups ?? this.disabledGroups,
       overrides: overrides ?? this.overrides,
     );
   }
@@ -969,6 +1021,9 @@ class ProfilesCompanion extends UpdateCompanion<RawProfile> {
     if (order.present) {
       map['order'] = Variable<int>(order.value);
     }
+    if (disabledGroups.present) {
+      map['disabled_groups'] = Variable<String>(disabledGroups.value);
+    }
     if (overrides.present) {
       map['overrides'] = Variable<String>(
         $ProfilesTable.$converteroverrides.toSql(overrides.value),
@@ -996,6 +1051,7 @@ class ProfilesCompanion extends UpdateCompanion<RawProfile> {
           ..write('selectedMap: $selectedMap, ')
           ..write('unfoldSet: $unfoldSet, ')
           ..write('order: $order, ')
+          ..write('disabledGroups: $disabledGroups, ')
           ..write('overrides: $overrides')
           ..write(')'))
         .toString();
@@ -1055,8 +1111,26 @@ class $ScriptsTable extends Scripts with TableInfo<$ScriptsTable, RawScript> {
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _customOptionsMeta = const VerificationMeta(
+    'customOptions',
+  );
   @override
-  List<GeneratedColumn> get $columns => [id, label, lastUpdateTime, url, order];
+  late final GeneratedColumn<String> customOptions = GeneratedColumn<String>(
+    'custom_options',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    label,
+    lastUpdateTime,
+    url,
+    order,
+    customOptions,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -1103,6 +1177,15 @@ class $ScriptsTable extends Scripts with TableInfo<$ScriptsTable, RawScript> {
         order.isAcceptableOrUnknown(data['order']!, _orderMeta),
       );
     }
+    if (data.containsKey('custom_options')) {
+      context.handle(
+        _customOptionsMeta,
+        customOptions.isAcceptableOrUnknown(
+          data['custom_options']!,
+          _customOptionsMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -1132,6 +1215,10 @@ class $ScriptsTable extends Scripts with TableInfo<$ScriptsTable, RawScript> {
         DriftSqlType.int,
         data['${effectivePrefix}order'],
       ),
+      customOptions: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}custom_options'],
+      ),
     );
   }
 
@@ -1147,12 +1234,14 @@ class RawScript extends DataClass implements Insertable<RawScript> {
   final DateTime lastUpdateTime;
   final String? url;
   final int? order;
+  final String? customOptions;
   const RawScript({
     required this.id,
     required this.label,
     required this.lastUpdateTime,
     this.url,
     this.order,
+    this.customOptions,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1166,6 +1255,9 @@ class RawScript extends DataClass implements Insertable<RawScript> {
     if (!nullToAbsent || order != null) {
       map['order'] = Variable<int>(order);
     }
+    if (!nullToAbsent || customOptions != null) {
+      map['custom_options'] = Variable<String>(customOptions);
+    }
     return map;
   }
 
@@ -1178,6 +1270,9 @@ class RawScript extends DataClass implements Insertable<RawScript> {
       order: order == null && nullToAbsent
           ? const Value.absent()
           : Value(order),
+      customOptions: customOptions == null && nullToAbsent
+          ? const Value.absent()
+          : Value(customOptions),
     );
   }
 
@@ -1192,6 +1287,7 @@ class RawScript extends DataClass implements Insertable<RawScript> {
       lastUpdateTime: serializer.fromJson<DateTime>(json['lastUpdateTime']),
       url: serializer.fromJson<String?>(json['url']),
       order: serializer.fromJson<int?>(json['order']),
+      customOptions: serializer.fromJson<String?>(json['customOptions']),
     );
   }
   @override
@@ -1203,6 +1299,7 @@ class RawScript extends DataClass implements Insertable<RawScript> {
       'lastUpdateTime': serializer.toJson<DateTime>(lastUpdateTime),
       'url': serializer.toJson<String?>(url),
       'order': serializer.toJson<int?>(order),
+      'customOptions': serializer.toJson<String?>(customOptions),
     };
   }
 
@@ -1212,12 +1309,16 @@ class RawScript extends DataClass implements Insertable<RawScript> {
     DateTime? lastUpdateTime,
     Value<String?> url = const Value.absent(),
     Value<int?> order = const Value.absent(),
+    Value<String?> customOptions = const Value.absent(),
   }) => RawScript(
     id: id ?? this.id,
     label: label ?? this.label,
     lastUpdateTime: lastUpdateTime ?? this.lastUpdateTime,
     url: url.present ? url.value : this.url,
     order: order.present ? order.value : this.order,
+    customOptions: customOptions.present
+        ? customOptions.value
+        : this.customOptions,
   );
   RawScript copyWithCompanion(ScriptsCompanion data) {
     return RawScript(
@@ -1228,6 +1329,9 @@ class RawScript extends DataClass implements Insertable<RawScript> {
           : this.lastUpdateTime,
       url: data.url.present ? data.url.value : this.url,
       order: data.order.present ? data.order.value : this.order,
+      customOptions: data.customOptions.present
+          ? data.customOptions.value
+          : this.customOptions,
     );
   }
 
@@ -1238,13 +1342,15 @@ class RawScript extends DataClass implements Insertable<RawScript> {
           ..write('label: $label, ')
           ..write('lastUpdateTime: $lastUpdateTime, ')
           ..write('url: $url, ')
-          ..write('order: $order')
+          ..write('order: $order, ')
+          ..write('customOptions: $customOptions')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, label, lastUpdateTime, url, order);
+  int get hashCode =>
+      Object.hash(id, label, lastUpdateTime, url, order, customOptions);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1253,7 +1359,8 @@ class RawScript extends DataClass implements Insertable<RawScript> {
           other.label == this.label &&
           other.lastUpdateTime == this.lastUpdateTime &&
           other.url == this.url &&
-          other.order == this.order);
+          other.order == this.order &&
+          other.customOptions == this.customOptions);
 }
 
 class ScriptsCompanion extends UpdateCompanion<RawScript> {
@@ -1262,12 +1369,14 @@ class ScriptsCompanion extends UpdateCompanion<RawScript> {
   final Value<DateTime> lastUpdateTime;
   final Value<String?> url;
   final Value<int?> order;
+  final Value<String?> customOptions;
   const ScriptsCompanion({
     this.id = const Value.absent(),
     this.label = const Value.absent(),
     this.lastUpdateTime = const Value.absent(),
     this.url = const Value.absent(),
     this.order = const Value.absent(),
+    this.customOptions = const Value.absent(),
   });
   ScriptsCompanion.insert({
     this.id = const Value.absent(),
@@ -1275,6 +1384,7 @@ class ScriptsCompanion extends UpdateCompanion<RawScript> {
     required DateTime lastUpdateTime,
     this.url = const Value.absent(),
     this.order = const Value.absent(),
+    this.customOptions = const Value.absent(),
   }) : label = Value(label),
        lastUpdateTime = Value(lastUpdateTime);
   static Insertable<RawScript> custom({
@@ -1283,6 +1393,7 @@ class ScriptsCompanion extends UpdateCompanion<RawScript> {
     Expression<DateTime>? lastUpdateTime,
     Expression<String>? url,
     Expression<int>? order,
+    Expression<String>? customOptions,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -1290,6 +1401,7 @@ class ScriptsCompanion extends UpdateCompanion<RawScript> {
       if (lastUpdateTime != null) 'last_update_time': lastUpdateTime,
       if (url != null) 'url': url,
       if (order != null) 'order': order,
+      if (customOptions != null) 'custom_options': customOptions,
     });
   }
 
@@ -1299,6 +1411,7 @@ class ScriptsCompanion extends UpdateCompanion<RawScript> {
     Value<DateTime>? lastUpdateTime,
     Value<String?>? url,
     Value<int?>? order,
+    Value<String?>? customOptions,
   }) {
     return ScriptsCompanion(
       id: id ?? this.id,
@@ -1306,6 +1419,7 @@ class ScriptsCompanion extends UpdateCompanion<RawScript> {
       lastUpdateTime: lastUpdateTime ?? this.lastUpdateTime,
       url: url ?? this.url,
       order: order ?? this.order,
+      customOptions: customOptions ?? this.customOptions,
     );
   }
 
@@ -1327,6 +1441,9 @@ class ScriptsCompanion extends UpdateCompanion<RawScript> {
     if (order.present) {
       map['order'] = Variable<int>(order.value);
     }
+    if (customOptions.present) {
+      map['custom_options'] = Variable<String>(customOptions.value);
+    }
     return map;
   }
 
@@ -1337,7 +1454,8 @@ class ScriptsCompanion extends UpdateCompanion<RawScript> {
           ..write('label: $label, ')
           ..write('lastUpdateTime: $lastUpdateTime, ')
           ..write('url: $url, ')
-          ..write('order: $order')
+          ..write('order: $order, ')
+          ..write('customOptions: $customOptions')
           ..write(')'))
         .toString();
   }
@@ -4461,6 +4579,7 @@ typedef $$ProfilesTableCreateCompanionBuilder =
       required Map<String, String> selectedMap,
       required Set<String> unfoldSet,
       Value<int?> order,
+      Value<String?> disabledGroups,
       Value<ProfileOverrides?> overrides,
     });
 typedef $$ProfilesTableUpdateCompanionBuilder =
@@ -4481,6 +4600,7 @@ typedef $$ProfilesTableUpdateCompanionBuilder =
       Value<Map<String, String>> selectedMap,
       Value<Set<String>> unfoldSet,
       Value<int?> order,
+      Value<String?> disabledGroups,
       Value<ProfileOverrides?> overrides,
     });
 
@@ -4657,6 +4777,11 @@ class $$ProfilesTableFilterComposer
 
   ColumnFilters<int> get order => $composableBuilder(
     column: $table.order,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get disabledGroups => $composableBuilder(
+    column: $table.disabledGroups,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -4856,6 +4981,11 @@ class $$ProfilesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get disabledGroups => $composableBuilder(
+    column: $table.disabledGroups,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get overrides => $composableBuilder(
     column: $table.overrides,
     builder: (column) => ColumnOrderings(column),
@@ -4939,6 +5069,11 @@ class $$ProfilesTableAnnotationComposer
 
   GeneratedColumn<int> get order =>
       $composableBuilder(column: $table.order, builder: (column) => column);
+
+  GeneratedColumn<String> get disabledGroups => $composableBuilder(
+    column: $table.disabledGroups,
+    builder: (column) => column,
+  );
 
   GeneratedColumnWithTypeConverter<ProfileOverrides?, String> get overrides =>
       $composableBuilder(column: $table.overrides, builder: (column) => column);
@@ -5094,6 +5229,7 @@ class $$ProfilesTableTableManager
                 Value<Map<String, String>> selectedMap = const Value.absent(),
                 Value<Set<String>> unfoldSet = const Value.absent(),
                 Value<int?> order = const Value.absent(),
+                Value<String?> disabledGroups = const Value.absent(),
                 Value<ProfileOverrides?> overrides = const Value.absent(),
               }) => ProfilesCompanion(
                 id: id,
@@ -5112,6 +5248,7 @@ class $$ProfilesTableTableManager
                 selectedMap: selectedMap,
                 unfoldSet: unfoldSet,
                 order: order,
+                disabledGroups: disabledGroups,
                 overrides: overrides,
               ),
           createCompanionCallback:
@@ -5133,6 +5270,7 @@ class $$ProfilesTableTableManager
                 required Map<String, String> selectedMap,
                 required Set<String> unfoldSet,
                 Value<int?> order = const Value.absent(),
+                Value<String?> disabledGroups = const Value.absent(),
                 Value<ProfileOverrides?> overrides = const Value.absent(),
               }) => ProfilesCompanion.insert(
                 id: id,
@@ -5151,6 +5289,7 @@ class $$ProfilesTableTableManager
                 selectedMap: selectedMap,
                 unfoldSet: unfoldSet,
                 order: order,
+                disabledGroups: disabledGroups,
                 overrides: overrides,
               ),
           withReferenceMapper: (p0) => p0
@@ -5297,6 +5436,7 @@ typedef $$ScriptsTableCreateCompanionBuilder =
       required DateTime lastUpdateTime,
       Value<String?> url,
       Value<int?> order,
+      Value<String?> customOptions,
     });
 typedef $$ScriptsTableUpdateCompanionBuilder =
     ScriptsCompanion Function({
@@ -5305,6 +5445,7 @@ typedef $$ScriptsTableUpdateCompanionBuilder =
       Value<DateTime> lastUpdateTime,
       Value<String?> url,
       Value<int?> order,
+      Value<String?> customOptions,
     });
 
 class $$ScriptsTableFilterComposer extends Composer<_$Database, $ScriptsTable> {
@@ -5337,6 +5478,11 @@ class $$ScriptsTableFilterComposer extends Composer<_$Database, $ScriptsTable> {
 
   ColumnFilters<int> get order => $composableBuilder(
     column: $table.order,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get customOptions => $composableBuilder(
+    column: $table.customOptions,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -5374,6 +5520,11 @@ class $$ScriptsTableOrderingComposer
     column: $table.order,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get customOptions => $composableBuilder(
+    column: $table.customOptions,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$ScriptsTableAnnotationComposer
@@ -5401,6 +5552,11 @@ class $$ScriptsTableAnnotationComposer
 
   GeneratedColumn<int> get order =>
       $composableBuilder(column: $table.order, builder: (column) => column);
+
+  GeneratedColumn<String> get customOptions => $composableBuilder(
+    column: $table.customOptions,
+    builder: (column) => column,
+  );
 }
 
 class $$ScriptsTableTableManager
@@ -5436,12 +5592,14 @@ class $$ScriptsTableTableManager
                 Value<DateTime> lastUpdateTime = const Value.absent(),
                 Value<String?> url = const Value.absent(),
                 Value<int?> order = const Value.absent(),
+                Value<String?> customOptions = const Value.absent(),
               }) => ScriptsCompanion(
                 id: id,
                 label: label,
                 lastUpdateTime: lastUpdateTime,
                 url: url,
                 order: order,
+                customOptions: customOptions,
               ),
           createCompanionCallback:
               ({
@@ -5450,12 +5608,14 @@ class $$ScriptsTableTableManager
                 required DateTime lastUpdateTime,
                 Value<String?> url = const Value.absent(),
                 Value<int?> order = const Value.absent(),
+                Value<String?> customOptions = const Value.absent(),
               }) => ScriptsCompanion.insert(
                 id: id,
                 label: label,
                 lastUpdateTime: lastUpdateTime,
                 url: url,
                 order: order,
+                customOptions: customOptions,
               ),
           withReferenceMapper: (p0) => p0
               .map(

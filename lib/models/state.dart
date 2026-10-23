@@ -230,6 +230,7 @@ abstract class MakeRealProfileState with _$MakeRealProfileState {
     @Default([]) List<String> authentication,
     @Default({}) Map<String, dynamic> injectedProxyProviders,
     @Default({}) Map<String, dynamic> injectedRuleProviders,
+    @Default(<String>{}) Set<String> disabledGroups,
     String? matchTarget,
     @Default(false) bool safeMode,
   }) = _MakeRealProfileState;
@@ -262,6 +263,7 @@ abstract class SetupState with _$SetupState {
     required List<Rule> addedRules,
     required Script? script,
     required ProfileOverrides overrides,
+    @Default(<String>{}) Set<String> disabledGroups,
     @Default([]) List<ClashProvider> clashProviders,
     @Default({}) Map<String, int> profileProviders,
     @Default([]) List<CustomProxy> appProxies,

@@ -231,6 +231,7 @@
   "loopback": "UWP 루프백 예외",
   "providers": "외부 리소스",
   "proxyProviders": "프록시 공급자",
+  "providerSubscriptionInfo": "프로바이더 구독",
   "ruleProviders": "규칙 공급자",
   "providerUrlTip": "원격 공급자만 지원합니다",
   "ruleSetEmptyTip": "규칙 세트에 사용할 수 있는 항목이 없습니다",
@@ -921,6 +922,7 @@
   "profileUpdatedAt": "{time} 업데이트",
   "profileExpiresIn": "{date} 만료, {days, plural, other{{days}일}} 남음",
   "profileDaysLeft": "{days, plural, other{{days}일 남음}}",
+  "profileShortestDaysLeft": "최소 {days}일 남음",
   "target": "대상",
   "outboundExit": "출구",
   "duration": "소요 시간",
@@ -939,5 +941,14 @@
   "customImportDroppedSubRules": "{count, plural, other{사용자 지정 프로필은 하위 규칙을 지원하지 않아 SUB-RULE 규칙 {label}개를 제외했습니다}}",
   "autoInclude": "자동 포함",
   "allReferencedProxies": "참조된 모든 프록시",
-  "allReferencedProxyProviders": "참조된 모든 프록시 공급자"
+  "allReferencedProxyProviders": "참조된 모든 프록시 공급자",
+  "ruleOptions": "사용자 지정 규칙 스위치",
+  "ruleOptionsGroups": "정책 그룹",
+  "ruleOptionsOthers": "기타 옵션",
+  "ruleOptionsEmpty": "이 스크립트에는 전환할 스위치가 없습니다",
+  "ruleOptionsEmptyDesc": "스위치는 ruleOptionsEnable에 선언해야 하며, 그 안의 항목만 여기에서 전환할 수 있습니다.",
+  "ruleOptionsFailed": "스크립트 스위치를 읽을 수 없습니다",
+  "ruleOptionsLockedGroup": "마지막 규칙이 이 그룹을 가리키므로 끌 수 없습니다",
+  "ruleOptionsRejected": "스크립트가 이 스위치를 거부하여 되돌렸습니다"
+
 }

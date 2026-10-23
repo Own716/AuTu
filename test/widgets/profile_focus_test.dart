@@ -205,6 +205,25 @@ void main() {
     );
   });
 
+  testWidgets('a subscription without an expiry reads as long term', (
+    tester,
+  ) async {
+    final l = currentAppLocalizations;
+    await pumpProfiles(
+      tester,
+      profiles: [
+        Profile.normal(
+          label: 'forever',
+          url: 'https://example.com/sub',
+        ).copyWith(subscriptionInfo: const SubscriptionInfo(total: 4096)),
+        Profile.normal(label: 'plain', url: 'https://example.com/other'),
+        Profile.normal(label: 'file'),
+      ],
+    );
+
+    expect(find.text(l.infiniteTime), findsOneWidget);
+  });
+
   testWidgets('a custom card counts its groups in place of an update time', (
     tester,
   ) async {

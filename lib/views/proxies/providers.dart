@@ -32,32 +32,13 @@ class _ExternalProvidersSliverState
   bool _isUpdating = false;
 
   Future<void> _updateProviders() async {
-    final appLocalizations = context.appLocalizations;
     final proxiesAction = ref.read(proxiesActionProvider.notifier);
-    final List<UpdatingMessage> messages = [];
     setState(() => _isUpdating = true);
+    var messages = <UpdatingMessage>[];
     try {
-      await Future.wait(
-        widget.providers.map((provider) async {
-          try {
-            final message = await proxiesAction.updateProvider(
-              provider,
-              showLoading: true,
-            );
-            if (message.isNotEmpty) {
-              messages.add(
-                UpdatingMessage(label: provider.name, message: message),
-              );
-            }
-          } catch (error) {
-            messages.add(
-              UpdatingMessage(
-                label: provider.name,
-                message: userFacingErrorMessage(error, appLocalizations),
-              ),
-            );
-          }
-        }),
+      messages = await proxiesAction.updateProviders(
+        widget.providers,
+        showLoading: true,
       );
     } finally {
       if (mounted) {
@@ -315,6 +296,7 @@ class _ExternalProviderItem extends StatelessWidget {
       title: ChipTitle(
         title: provider.name,
         expire: provider.subscriptionInfo?.expireDate,
+        permanent: provider.type == 'Proxy',
       ),
       subtitle: Text(switch (provider.type) {
         'Proxy' => appLocalizations.proxiesCount(count, count.compact),

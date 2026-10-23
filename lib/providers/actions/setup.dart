@@ -455,7 +455,17 @@ class SetupAction extends _$SetupAction {
         ? await setupState.script?.content
         : null;
     final hasScript = scriptContent?.isNotEmpty == true;
-    final profileBase = !isCustom && !hasScript
+    // A script builds its own groups from its switches, so the YAML switches
+    // only speak for a profile whose groups come straight from the file.
+    final disabledGroups =
+        setupState.profileType != ProfileType.custom &&
+            setupState.extendType == ExtendType.standard
+        ? setupState.disabledGroups
+        : const <String>{};
+    // The Core rebuilds `proxy-groups` out of the profile file whenever it has
+    // a base, so an overlay cannot take a group away. With groups switched off,
+    // build the whole config here instead, where they can be dropped.
+    final profileBase = !isCustom && !hasScript && disabledGroups.isEmpty
         ? await _core.getProfileBase(profileId)
         : null;
     Map<String, dynamic> rawConfig = isCustom
@@ -470,7 +480,11 @@ class SetupAction extends _$SetupAction {
     final proxyGroups = isCustom ? setupState.proxyGroups : <ProxyGroup>[];
     final rules = isCustom ? setupState.rules : <Rule>[];
     if (hasScript) {
-      rawConfig = await handleEvaluate(scriptContent!, rawConfig);
+      rawConfig = await handleEvaluate(
+        scriptContent!,
+        rawConfig,
+        customOptions: setupState.script?.customOptions ?? const {},
+      );
     }
     final directory = await appPath.profilesPath;
     final injected = await _resolveInjectedProviders(
@@ -495,6 +509,7 @@ class SetupAction extends _$SetupAction {
         addedRules: setupState.addedRules,
         defaultUA: defaultUA,
         authentication: networkSetting.authentication.credentials,
+        disabledGroups: disabledGroups,
         matchTarget:
             profileBase == null ||
                 setupState.matchTarget?.trim().isNotEmpty == true

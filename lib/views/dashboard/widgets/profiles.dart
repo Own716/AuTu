@@ -19,8 +19,7 @@ import 'profile_detail.dart';
 
 typedef _Usage = ({int used, int total, double share});
 
-_Usage? _usageOf(Profile? profile) {
-  final info = profile?.subscriptionInfo;
+_Usage? _usageOf(SubscriptionInfo? info) {
   if (info == null || info.total <= 0) {
     return null;
   }
@@ -32,8 +31,8 @@ _Usage? _usageOf(Profile? profile) {
   );
 }
 
-DateTime? _expiryOf(Profile? profile) {
-  final expire = profile?.subscriptionInfo?.expire ?? 0;
+DateTime? _expiryOf(SubscriptionInfo? info) {
+  final expire = info?.expire ?? 0;
   return expire > 0 ? DateTime.fromMillisecondsSinceEpoch(expire * 1000) : null;
 }
 
@@ -76,11 +75,13 @@ class ProfilesCard extends ConsumerWidget {
     final compact = density.isCompact;
     final appLocalizations = context.appLocalizations;
     final profile = ref.watch(currentProfileProvider);
+    final providers = ref.watch(providersProvider);
     final switchable = ref.watch(
       profilesProvider.select((profiles) => profiles.length > 1),
     );
-    final usage = _usageOf(profile);
-    final expiry = _expiryOf(profile);
+    final quota = profileQuotaOf(profile, providers);
+    final usage = _usageOf(quota?.info);
+    final expiry = _expiryOf(quota?.info);
     final updatedAt = profile?.lastUpdateDate;
     final label = DashboardText.label(context);
     final figure = mobile
@@ -89,9 +90,15 @@ class ProfilesCard extends ConsumerWidget {
     final name = mobile || !compact
         ? AppTextStyle.headline
         : AppTextStyle.callout;
-    final endText = switch ((profile, expiry)) {
-      (_, final expiry?) => appLocalizations.profileDaysLeft(_daysLeft(expiry)),
-      (final profile?, null) => _sourceOf(context, profile.type),
+    final fromProviders = quota?.fromProviders ?? false;
+    final endText = switch ((profile, expiry, fromProviders)) {
+      (_, final expiry?, _) =>
+        fromProviders
+            ? appLocalizations.profileShortestDaysLeft(_daysLeft(expiry))
+            : appLocalizations.profileDaysLeft(_daysLeft(expiry)),
+      // Providers that never expire still end a config that has no expiry.
+      (_, null, true) => appLocalizations.infiniteTime,
+      (final profile?, null, false) => _sourceOf(context, profile.type),
       _ => null,
     };
     final Widget? end = switch ((endText, expiry)) {
@@ -100,17 +107,25 @@ class ProfilesCard extends ConsumerWidget {
         child: Text(
           text,
           maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: _daysLeft(expiry) <= _soonDays
               ? label.copyWith(color: DashboardColors.of(context).warn)
               : label,
         ),
       ),
-      (final text?, null) => Text(text, maxLines: 1, style: label),
+      (final text?, null) => Text(
+        text,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: label,
+      ),
       _ => null,
     };
-    final sync = profile != null && profile.type == ProfileType.url
-        ? _SyncButton(profile: profile)
-        : null;
+    final sync = switch (profile) {
+      Profile(type: ProfileType.url) => _SyncButton(profile: profile),
+      Profile(type: ProfileType.file) => _providersSyncButton(providers),
+      _ => null,
+    };
     final nameRow = Row(
       children: [
         Flexible(
@@ -185,18 +200,28 @@ class ProfilesCard extends ConsumerWidget {
                             _rowGap +
                             _widthOf(endText ?? '', label) <=
                         constraints.maxWidth;
+                // A long day count gives way to the update time beside it.
+                final updatedText = (fits ? updated : time) ?? '';
+                final endWidth = math.max(
+                  0.0,
+                  constraints.maxWidth - _rowGap - _widthOf(updatedText, label),
+                );
                 return Row(
                   spacing: _rowGap,
                   children: [
                     Expanded(
                       child: Text(
-                        (fits ? updated : time) ?? '',
+                        updatedText,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: label,
                       ),
                     ),
-                    ?end,
+                    if (end != null)
+                      ConstrainedBox(
+                        constraints: BoxConstraints(maxWidth: endWidth),
+                        child: end,
+                      ),
                   ],
                 );
               },
@@ -237,6 +262,66 @@ class _SyncButton extends ConsumerWidget {
       glyph: AppGlyphs.sync,
       tooltip: context.appLocalizations.update,
       onPressed: () => syncProfile(ref, profile),
+    );
+  }
+}
+
+Widget? _providersSyncButton(List<ExternalProvider> providers) {
+  final syncable = [
+    for (final provider in providers)
+      if (provider.type == 'Proxy' && provider.vehicleType == 'HTTP') provider,
+  ];
+  return syncable.isEmpty ? null : _ProvidersSyncButton(providers: syncable);
+}
+
+/// A config built from proxy providers has no subscription of its own to
+/// re-download, so its refresh updates the providers the quota comes from.
+class _ProvidersSyncButton extends ConsumerStatefulWidget {
+  const _ProvidersSyncButton({required this.providers});
+
+  final List<ExternalProvider> providers;
+
+  @override
+  ConsumerState<_ProvidersSyncButton> createState() =>
+      _ProvidersSyncButtonState();
+}
+
+class _ProvidersSyncButtonState extends ConsumerState<_ProvidersSyncButton> {
+  bool _isUpdating = false;
+
+  Future<void> _handleUpdate() async {
+    if (_isUpdating) {
+      return;
+    }
+    final proxiesAction = ref.read(proxiesActionProvider.notifier);
+    setState(() => _isUpdating = true);
+    var messages = <UpdatingMessage>[];
+    try {
+      messages = await proxiesAction.updateProviders(
+        widget.providers,
+        showLoading: true,
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isUpdating = false);
+      }
+    }
+    proxiesAction.updateGroupsDebounce();
+    dialogs.showFailures(messages);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isUpdating) {
+      return const SizedBox.square(
+        dimension: 32,
+        child: Center(child: CommonCircleLoading(size: 18)),
+      );
+    }
+    return DashboardIconButton(
+      glyph: AppGlyphs.sync,
+      tooltip: context.appLocalizations.update,
+      onPressed: _handleUpdate,
     );
   }
 }

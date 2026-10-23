@@ -1,7 +1,7 @@
 name: outo
 description: AuTu 1.0.8 预览版 - 基于 ClashMeta 的 Android 代理客户端，简洁易用、开源无广告。
 publish_to: 'none'
-version: 1.0.8+2026102308
+version: 1.0.8+2026102301
 environment:
   sdk: '>=3.10.0 <4.0.0'
 

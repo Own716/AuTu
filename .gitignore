@@ -78,3 +78,6 @@ devtools_options.yaml
 .fvm/
 .fvmrc
 /coverage/lcov.info
+
+# Local agent workspace (signing key backups, temp files)
+.workbuddy/

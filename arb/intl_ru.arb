@@ -231,6 +231,7 @@
   "loopback": "Снятие ограничения loopback для UWP",
   "providers": "Внешние ресурсы",
   "proxyProviders": "Провайдеры прокси",
+  "providerSubscriptionInfo": "Подписка провайдеров",
   "ruleProviders": "Провайдеры правил",
   "providerUrlTip": "Поддерживаются только удалённые ресурсы",
   "ruleSetEmptyTip": "В наборе правил нет пригодных записей",
@@ -921,6 +922,7 @@
   "profileUpdatedAt": "Обновлено {time}",
   "profileExpiresIn": "Истекает {date}, осталось дней: {days}",
   "profileDaysLeft": "Осталось дней: {days}",
+  "profileShortestDaysLeft": "Осталось минимум дней: {days}",
   "target": "Цель",
   "outboundExit": "Выход",
   "duration": "Длительность",
@@ -939,5 +941,14 @@
   "customImportDroppedSubRules": "{count, plural, one{Пользовательские профили не поддерживают подправила, поэтому отброшено {label} правило SUB-RULE} few{Пользовательские профили не поддерживают подправила, поэтому отброшено {label} правила SUB-RULE} many{Пользовательские профили не поддерживают подправила, поэтому отброшено {label} правил SUB-RULE} other{Пользовательские профили не поддерживают подправила, поэтому отброшено {label} правила SUB-RULE}}",
   "autoInclude": "Автоматическое включение",
   "allReferencedProxies": "Все используемые прокси",
-  "allReferencedProxyProviders": "Все используемые провайдеры прокси"
+  "allReferencedProxyProviders": "Все используемые провайдеры прокси",
+  "ruleOptions": "Переключатели правил",
+  "ruleOptionsGroups": "Группы политик",
+  "ruleOptionsOthers": "Другие параметры",
+  "ruleOptionsEmpty": "Этот скрипт не объявляет переключателей",
+  "ruleOptionsEmptyDesc": "Скрипт объявляет переключатели в ruleOptionsEnable; менять здесь можно только их.",
+  "ruleOptionsFailed": "Не удалось прочитать переключатели скрипта",
+  "ruleOptionsLockedGroup": "Последнее правило указывает сюда, поэтому группу нельзя отключить",
+  "ruleOptionsRejected": "Скрипт отклонил эти переключатели, они восстановлены"
+
 }

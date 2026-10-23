@@ -38,6 +38,8 @@ class Profiles extends Table {
 
   IntColumn get order => integer().nullable()();
 
+  TextColumn get disabledGroups => text().nullable()();
+
   TextColumn get overrides =>
       text().map(const ProfileOverridesConverter()).nullable()();
 
@@ -171,6 +173,7 @@ extension RawProfilExt on RawProfile {
       scriptId: scriptId,
       matchTarget: matchTarget,
       order: order,
+      disabledGroups: decodeDisabledGroups(disabledGroups),
       overrides: overrides ?? const ProfileOverrides(),
     );
   }
@@ -195,7 +198,32 @@ extension ProfilesCompanionExt on Profile {
       scriptId: Value(scriptId),
       matchTarget: Value(matchTarget),
       order: Value(order ?? this.order),
+      disabledGroups: Value(encodeDisabledGroups(disabledGroups)),
       overrides: Value(overrides),
     );
   }
+}
+
+/// A value this column cannot name costs the switches alone, not the profile.
+Set<String> decodeDisabledGroups(String? source) {
+  if (source == null || source.isEmpty) {
+    return const {};
+  }
+  final Object? decoded;
+  try {
+    decoded = json.decode(source);
+  } on FormatException {
+    return const {};
+  }
+  if (decoded is! List) {
+    return const {};
+  }
+  return {
+    for (final item in decoded)
+      if (item is String && item.isNotEmpty) item,
+  };
+}
+
+String? encodeDisabledGroups(Set<String> groups) {
+  return groups.isEmpty ? null : json.encode(groups.toList());
 }

@@ -229,6 +229,70 @@ void main() {
     },
   );
 
+  test('a disabled group takes its members and its rules with it', () async {
+    final rawConfig = await decodeJSONTask<Map<String, dynamic>>(
+      jsonEncode({
+        'proxies': [
+          {'name': 'A', 'type': 'ss'},
+          {'name': 'B', 'type': 'ss'},
+          {'name': 'C', 'type': 'ss', 'dialer-proxy': 'AdBlock'},
+          {'name': 'D', 'type': 'ss', 'dialer-proxy': 'A'},
+        ],
+        'proxy-groups': [
+          {
+            'name': 'Manual',
+            'type': 'select',
+            'proxies': ['AdBlock', 'A'],
+          },
+          {
+            'name': 'AdBlock',
+            'type': 'select',
+            'proxies': ['A', 'B'],
+          },
+          {
+            'name': 'Fallback',
+            'type': 'select',
+            'proxies': ['AdBlock', 'B'],
+          },
+        ],
+        'rules': ['DOMAIN,ads.example,AdBlock', 'MATCH,Fallback'],
+      }),
+    );
+
+    final result = await makeRealProfileTask(
+      MakeRealProfileState(
+        profilesPath: '/profiles',
+        profileId: 7,
+        rawConfig: rawConfig,
+        realPatchConfig: const PatchClashConfig(),
+        appendSystemDns: false,
+        proxyGroups: const [],
+        rules: const [],
+        addedRules: const [],
+        defaultUA: 'FlClash-Test',
+        disabledGroups: const {'AdBlock'},
+      ),
+    );
+    final config = loadPlainYaml(result.yaml) as Map<Object?, Object?>;
+    final groups = config['proxy-groups'] as List;
+    final members = {
+      for (final group in groups)
+        (group as Map)['name']: group['proxies'] as List,
+    };
+
+    expect(members.keys, ['Manual', 'Fallback']);
+    expect(members['Manual'], ['A']);
+    expect(members['Fallback'], ['B']);
+    expect(config['rules'], ['MATCH,Fallback']);
+    expect(result.counts.groups, 2);
+    final dialers = {
+      for (final proxy in config['proxies'] as List)
+        (proxy as Map)['name']: proxy['dialer-proxy'],
+    };
+    expect(dialers['C'], isNull);
+    expect(dialers['D'], 'A');
+  });
+
   test('lastMatchTarget reads the last MATCH rule that names a target', () {
     expect(
       lastMatchTarget(['MATCH,A', 'DOMAIN,x.test,B', 'match,C', 'MATCH,']),

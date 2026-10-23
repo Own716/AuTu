@@ -112,6 +112,7 @@ Future<SetupState> setupState(Ref ref, int? profileId) async {
     addedRules: addedRules,
     script: script,
     overrides: overrides,
+    disabledGroups: profile?.disabledGroups ?? const {},
     matchTarget:
         profileType != ProfileType.custom && extendType == ExtendType.standard
         ? profile?.matchTarget

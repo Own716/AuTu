@@ -1760,6 +1760,16 @@ class AppLocalizations {
     );
   }
 
+  /// `Provider subscription`
+  String get providerSubscriptionInfo {
+    return Intl.message(
+      'Provider subscription',
+      name: 'providerSubscriptionInfo',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Rule providers`
   String get ruleProviders {
     return Intl.message(
@@ -7688,6 +7698,18 @@ class AppLocalizations {
     );
   }
 
+  /// `{days, plural, =1{1 day left at the earliest} other{{days} days left at the earliest}}`
+  String profileShortestDaysLeft(num days) {
+    return Intl.plural(
+      days,
+      one: '1 day left at the earliest',
+      other: '$days days left at the earliest',
+      name: 'profileShortestDaysLeft',
+      desc: '',
+      args: [days],
+    );
+  }
+
   /// `Target`
   String get target {
     return Intl.message('Target', name: 'target', desc: '', args: []);
@@ -7832,6 +7854,86 @@ class AppLocalizations {
     return Intl.message(
       'All referenced proxy providers',
       name: 'allReferencedProxyProviders',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Custom rule switches`
+  String get ruleOptions {
+    return Intl.message(
+      'Custom rule switches',
+      name: 'ruleOptions',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Policy groups`
+  String get ruleOptionsGroups {
+    return Intl.message(
+      'Policy groups',
+      name: 'ruleOptionsGroups',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Other options`
+  String get ruleOptionsOthers {
+    return Intl.message(
+      'Other options',
+      name: 'ruleOptionsOthers',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `This script declares no switches`
+  String get ruleOptionsEmpty {
+    return Intl.message(
+      'This script declares no switches',
+      name: 'ruleOptionsEmpty',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `A script lists its switches in ruleOptionsEnable; only those can be toggled here.`
+  String get ruleOptionsEmptyDesc {
+    return Intl.message(
+      'A script lists its switches in ruleOptionsEnable; only those can be toggled here.',
+      name: 'ruleOptionsEmptyDesc',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Could not read the script's switches`
+  String get ruleOptionsFailed {
+    return Intl.message(
+      'Could not read the script\'s switches',
+      name: 'ruleOptionsFailed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `The fallback rule points here, so it stays on`
+  String get ruleOptionsLockedGroup {
+    return Intl.message(
+      'The fallback rule points here, so it stays on',
+      name: 'ruleOptionsLockedGroup',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `The script rejected these switches, so they were put back`
+  String get ruleOptionsRejected {
+    return Intl.message(
+      'The script rejected these switches, so they were put back',
+      name: 'ruleOptionsRejected',
       desc: '',
       args: [],
     );

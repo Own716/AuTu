@@ -97,4 +97,29 @@ void main() {
       expect(converter.fromSql(converter.toSql(original)), original);
     });
   });
+
+  group('script rule options', () {
+    test('roundtrip keeps every switch', () {
+      const original = {'Google': false, '极简模式': true};
+
+      expect(decodeScriptOptions(encodeScriptOptions(original)), original);
+    });
+
+    test('stores nothing for a script nobody switched', () {
+      expect(encodeScriptOptions(const {}), isNull);
+      expect(decodeScriptOptions(null), isEmpty);
+      expect(decodeScriptOptions(''), isEmpty);
+    });
+
+    test('keeps the script when the column cannot be read', () {
+      expect(decodeScriptOptions('{not json'), isEmpty);
+      expect(decodeScriptOptions('[1,2]'), isEmpty);
+    });
+
+    test('drops entries that are not switches', () {
+      expect(decodeScriptOptions('{"Google":false,"AI":"yes"}'), {
+        'Google': false,
+      });
+    });
+  });
 }

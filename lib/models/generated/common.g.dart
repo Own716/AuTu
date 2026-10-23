@@ -271,6 +271,11 @@ _Script _$ScriptFromJson(Map<String, dynamic> json) => _Script(
   lastUpdateTime: DateTime.parse(json['lastUpdateTime'] as String),
   url: json['url'] as String?,
   order: (json['order'] as num?)?.toInt(),
+  customOptions:
+      (json['customOptions'] as Map<String, dynamic>?)?.map(
+        (k, e) => MapEntry(k, e as bool),
+      ) ??
+      const <String, bool>{},
 );
 
 Map<String, dynamic> _$ScriptToJson(_Script instance) => <String, dynamic>{
@@ -279,6 +284,7 @@ Map<String, dynamic> _$ScriptToJson(_Script instance) => <String, dynamic>{
   'lastUpdateTime': instance.lastUpdateTime.toIso8601String(),
   'url': instance.url,
   'order': instance.order,
+  'customOptions': instance.customOptions,
 };
 
 _IconSetIcon _$IconSetIconFromJson(Map<String, dynamic> json) =>

@@ -1,5 +1,8 @@
-﻿import 'package:outo/common/common.dart';
+﻿import 'dart:async';
+
+import 'package:outo/common/common.dart';
 import 'package:outo/enum/enum.dart';
+import 'package:outo/models/models.dart';
 import 'package:outo/providers/providers.dart';
 import 'package:outo/ui/icons/icons.dart';
 import 'package:outo/views/proxies/list.dart';
@@ -7,6 +10,7 @@ import 'package:outo/widgets/widgets.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'rule_options.dart';
 import 'setting.dart';
 import 'tab.dart';
 
@@ -29,9 +33,20 @@ class _ProxiesViewState extends ConsumerState<ProxiesView> {
   late final _tabView = ProxiesTabView(key: _proxiesTabKey);
   bool _isTab = false;
 
+  /// Decided off the profile: a script must be asked, a YAML parsed.
+  bool _hasRuleSwitches = false;
+
   List<CommonPopupMenuItem> _buildMenuItems(BuildContext context) {
     final appLocalizations = context.appLocalizations;
     return [
+      if (_hasRuleSwitches)
+        CommonPopupMenuItem(
+          glyph: AppGlyphs.toggle,
+          label: appLocalizations.ruleOptions,
+          onPressed: () {
+            showRuleOptionsSheet(context);
+          },
+        ),
       CommonPopupMenuItem(
         glyph: AppGlyphs.sliders,
         label: appLocalizations.settings,
@@ -85,6 +100,25 @@ class _ProxiesViewState extends ConsumerState<ProxiesView> {
       },
       fireImmediately: true,
     );
+    ref.listenManual(
+      currentProfileProvider,
+      (_, profile) => unawaited(_resolveRuleSwitches(profile)),
+      fireImmediately: true,
+    );
+  }
+
+  Future<void> _resolveRuleSwitches(Profile? profile) async {
+    final bool available;
+    try {
+      available = await loadRuleSwitches(profile) != null;
+    } catch (error) {
+      commonPrint.log('rule switches could not be resolved: $error');
+      return;
+    }
+    if (!mounted || available == _hasRuleSwitches) {
+      return;
+    }
+    setState(() => _hasRuleSwitches = available);
   }
 
   @override

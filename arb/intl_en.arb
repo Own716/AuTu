@@ -231,6 +231,7 @@
   "loopback": "UWP loopback exemption",
   "providers": "External resources",
   "proxyProviders": "Proxy providers",
+  "providerSubscriptionInfo": "Provider subscription",
   "ruleProviders": "Rule providers",
   "providerUrlTip": "Only remote providers are supported",
   "ruleSetEmptyTip": "The rule set has no usable entries",
@@ -921,6 +922,7 @@
   "profileUpdatedAt": "Updated {time}",
   "profileExpiresIn": "Expires {date}, {days, plural, =1{1 day} other{{days} days}} left",
   "profileDaysLeft": "{days, plural, =1{1 day left} other{{days} days left}}",
+  "profileShortestDaysLeft": "{days, plural, =1{1 day left at the earliest} other{{days} days left at the earliest}}",
   "target": "Target",
   "outboundExit": "Exit",
   "duration": "Duration",
@@ -939,5 +941,14 @@
   "customImportDroppedSubRules": "{count, plural, =1{1 SUB-RULE rule was dropped, since custom profiles do not support sub-rules} other{{label} SUB-RULE rules were dropped, since custom profiles do not support sub-rules}}",
   "autoInclude": "Auto-include",
   "allReferencedProxies": "All referenced proxies",
-  "allReferencedProxyProviders": "All referenced proxy providers"
+  "allReferencedProxyProviders": "All referenced proxy providers",
+  "ruleOptions": "Custom rule switches",
+  "ruleOptionsGroups": "Policy groups",
+  "ruleOptionsOthers": "Other options",
+  "ruleOptionsEmpty": "This script declares no switches",
+  "ruleOptionsEmptyDesc": "A script lists its switches in ruleOptionsEnable; only those can be toggled here.",
+  "ruleOptionsFailed": "Could not read the script's switches",
+  "ruleOptionsLockedGroup": "The fallback rule points here, so it stays on",
+  "ruleOptionsRejected": "The script rejected these switches, so they were put back"
+
 }

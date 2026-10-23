@@ -685,6 +685,10 @@ abstract class Script with _$Script {
     required DateTime lastUpdateTime,
     String? url,
     int? order,
+
+    /// The switches the reader set in the rule options sheet, keyed by the
+    /// name the script declares in its `ruleOptionsEnable` table.
+    @Default(<String, bool>{}) Map<String, bool> customOptions,
   }) = _Script;
 
   factory Script.fromJson(Map<String, Object?> json) => _$ScriptFromJson(json);

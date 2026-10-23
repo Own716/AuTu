@@ -15,6 +15,8 @@ class Scripts extends Table {
 
   IntColumn get order => integer().nullable()();
 
+  TextColumn get customOptions => text().nullable()();
+
   @override
   Set<Column> get primaryKey => {id};
 }
@@ -85,6 +87,7 @@ extension RawScriptExt on RawScript {
       lastUpdateTime: lastUpdateTime,
       url: url,
       order: order,
+      customOptions: decodeScriptOptions(customOptions),
     );
   }
 }
@@ -97,6 +100,31 @@ extension ScriptsCompanionExt on Script {
       lastUpdateTime: lastUpdateTime,
       url: Value(url),
       order: Value(order ?? this.order),
+      customOptions: Value(encodeScriptOptions(customOptions)),
     );
   }
+}
+
+/// A value this column cannot name costs the switches alone, not the script.
+Map<String, bool> decodeScriptOptions(String? source) {
+  if (source == null || source.isEmpty) {
+    return const {};
+  }
+  final Object? decoded;
+  try {
+    decoded = json.decode(source);
+  } on FormatException {
+    return const {};
+  }
+  if (decoded is! Map) {
+    return const {};
+  }
+  return {
+    for (final entry in decoded.entries)
+      if (entry.value is bool) entry.key.toString(): entry.value as bool,
+  };
+}
+
+String? encodeScriptOptions(Map<String, bool> options) {
+  return options.isEmpty ? null : json.encode(options);
 }

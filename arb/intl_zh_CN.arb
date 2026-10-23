@@ -231,6 +231,7 @@
   "loopback": "UWP 回环解锁",
   "providers": "外部资源",
   "proxyProviders": "代理集",
+  "providerSubscriptionInfo": "代理集订阅",
   "ruleProviders": "规则集",
   "providerUrlTip": "仅支持远程资源",
   "ruleSetEmptyTip": "规则集中没有可用的条目",
@@ -921,6 +922,7 @@
   "profileUpdatedAt": "更新于 {time}",
   "profileExpiresIn": "{date} 到期，剩余 {days} 天",
   "profileDaysLeft": "剩余 {days} 天",
+  "profileShortestDaysLeft": "最短剩余 {days} 天",
   "target": "目标",
   "outboundExit": "出口",
   "duration": "时长",
@@ -939,5 +941,14 @@
   "customImportDroppedSubRules": "{count, plural, other{自定义配置不支持子规则，已丢弃 {label} 条 SUB-RULE 规则}}",
   "autoInclude": "自动包含",
   "allReferencedProxies": "全部被引用的代理",
-  "allReferencedProxyProviders": "全部被引用的代理集"
+  "allReferencedProxyProviders": "全部被引用的代理集",
+  "ruleOptions": "自定义规则开关",
+  "ruleOptionsGroups": "策略组",
+  "ruleOptionsOthers": "其他设置",
+  "ruleOptionsEmpty": "这个脚本没有可切换的开关",
+  "ruleOptionsEmptyDesc": "脚本需要声明 ruleOptionsEnable，其中的选项才能在这里显示。",
+  "ruleOptionsFailed": "无法读取脚本开关",
+  "ruleOptionsLockedGroup": "兜底规则指向它，不能关闭",
+  "ruleOptionsRejected": "脚本拒绝了这些开关，已还原"
+
 }

@@ -8,7 +8,15 @@ const _expireGap = 12.0;
 class SubscriptionInfoView extends StatelessWidget {
   final SubscriptionInfo? subscriptionInfo;
 
-  const SubscriptionInfoView({super.key, this.subscriptionInfo});
+  /// Off when the expiry is shown beside the name instead, as a provider row
+  /// that pairs this with a [ChipTitle] does.
+  final bool showExpire;
+
+  const SubscriptionInfoView({
+    super.key,
+    this.subscriptionInfo,
+    this.showExpire = true,
+  });
 
   double _textWidth(BuildContext context, String text, TextStyle? style) {
     final painter = TextPainter(
@@ -35,9 +43,11 @@ class SubscriptionInfoView extends StatelessWidget {
 
     final useShow = use.traffic.show;
     final totalShow = total.traffic.show;
-    final expireShow = info.expire != 0
-        ? DateTime.fromMillisecondsSinceEpoch(info.expire * 1000).show
-        : context.appLocalizations.infiniteTime;
+    final expireShow = showExpire
+        ? (info.expire != 0
+              ? DateTime.fromMillisecondsSinceEpoch(info.expire * 1000).show
+              : context.appLocalizations.infiniteTime)
+        : null;
     final valueStyle = AppTextStyle.subheadline
         .of(context, emphasized: true)
         .copyWith(color: context.colorScheme.onSurfaceVariant);
@@ -49,26 +59,29 @@ class SubscriptionInfoView extends StatelessWidget {
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
     );
-    final expireText = Text(
-      expireShow,
-      style: metaStyle,
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
-    );
+    final expireText = expireShow == null
+        ? null
+        : Text(
+            expireShow,
+            style: metaStyle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         LayoutBuilder(
           builder: (context, constraints) {
-            final showExpire =
+            final fitsExpire =
+                expireShow != null &&
                 _textWidth(context, trafficLabel, valueStyle) +
-                    _expireGap +
-                    _textWidth(context, expireShow, metaStyle) <=
-                constraints.maxWidth;
+                        _expireGap +
+                        _textWidth(context, expireShow, metaStyle) <=
+                    constraints.maxWidth;
             return Row(
               children: [
                 Expanded(child: trafficText),
-                if (showExpire) ...[
+                if (fitsExpire && expireText != null) ...[
                   const SizedBox(width: _expireGap),
                   expireText,
                 ],

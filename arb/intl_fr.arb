@@ -231,6 +231,7 @@
   "loopback": "Exemption de bouclage UWP",
   "providers": "Ressources externes",
   "proxyProviders": "Fournisseurs de proxys",
+  "providerSubscriptionInfo": "Abonnement du fournisseur",
   "ruleProviders": "Fournisseurs de règles",
   "providerUrlTip": "Seuls les fournisseurs distants sont pris en charge",
   "ruleSetEmptyTip": "Le jeu de règles ne contient aucune entrée exploitable",
@@ -921,6 +922,7 @@
   "profileUpdatedAt": "Mis à jour {time}",
   "profileExpiresIn": "Expire le {date}, {days, plural, =1{1 jour restant} other{{days} jours restants}}",
   "profileDaysLeft": "{days, plural, =1{1 jour restant} other{{days} jours restants}}",
+  "profileShortestDaysLeft": "{days, plural, =1{Au plus tôt 1 jour restant} other{Au plus tôt {days} jours restants}}",
   "target": "Cible",
   "outboundExit": "Sortie",
   "duration": "Durée",
@@ -939,5 +941,14 @@
   "customImportDroppedSubRules": "{count, plural, =1{1 règle SUB-RULE a été abandonnée, car les profils personnalisés ne prennent pas en charge les sous-règles} other{{label} règles SUB-RULE ont été abandonnées, car les profils personnalisés ne prennent pas en charge les sous-règles}}",
   "autoInclude": "Inclure automatiquement",
   "allReferencedProxies": "Tous les proxys référencés",
-  "allReferencedProxyProviders": "Tous les fournisseurs de proxys référencés"
+  "allReferencedProxyProviders": "Tous les fournisseurs de proxys référencés",
+  "ruleOptions": "Interrupteurs de règles",
+  "ruleOptionsGroups": "Groupes de politiques",
+  "ruleOptionsOthers": "Autres options",
+  "ruleOptionsEmpty": "Ce script ne déclare aucun interrupteur",
+  "ruleOptionsEmptyDesc": "Un script déclare ses interrupteurs dans ruleOptionsEnable ; seuls ceux-là peuvent être modifiés ici.",
+  "ruleOptionsFailed": "Impossible de lire les interrupteurs du script",
+  "ruleOptionsLockedGroup": "La règle finale pointe ici, il reste donc actif",
+  "ruleOptionsRejected": "Le script a refusé ces interrupteurs, ils ont été rétablis"
+
 }

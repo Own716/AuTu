@@ -367,6 +367,39 @@ class ProxiesAction extends _$ProxiesAction {
     }
   }
 
+  /// Updates every provider in [providers] at once, naming the ones that fail
+  /// so a caller showing them together can report each by its own name.
+  Future<List<UpdatingMessage>> updateProviders(
+    Iterable<ExternalProvider> providers, {
+    bool showLoading = false,
+  }) async {
+    final appLocalizations = currentAppLocalizations;
+    final messages = <UpdatingMessage>[];
+    await Future.wait(
+      providers.map((provider) async {
+        try {
+          final message = await updateProvider(
+            provider,
+            showLoading: showLoading,
+          );
+          if (message.isNotEmpty) {
+            messages.add(
+              UpdatingMessage(label: provider.name, message: message),
+            );
+          }
+        } catch (error) {
+          messages.add(
+            UpdatingMessage(
+              label: provider.name,
+              message: userFacingErrorMessage(error, appLocalizations),
+            ),
+          );
+        }
+      }),
+    );
+    return messages;
+  }
+
   Future<String> sideLoadExternalProvider(
     ExternalProvider provider,
     String data, {

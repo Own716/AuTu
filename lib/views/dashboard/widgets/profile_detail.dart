@@ -39,6 +39,80 @@ void showProfilesSheet(BuildContext context) {
 
 typedef ProfileStats = ({int groups, int proxies, int rules, int providers});
 
+typedef ProfileQuota = ({SubscriptionInfo info, bool fromProviders});
+
+typedef ProviderQuota = ({ExternalProvider provider, SubscriptionInfo info});
+
+/// Proxy providers that report a quota, the one ending soonest first and the
+/// long-term ones last.
+List<ProviderQuota> providerQuotasOf(Iterable<ExternalProvider> providers) {
+  final quotas = <ProviderQuota>[];
+  for (final provider in providers) {
+    final info = provider.subscriptionInfo;
+    if (provider.type != 'Proxy' || info == null || info.total <= 0) {
+      continue;
+    }
+    quotas.add((provider: provider, info: info));
+  }
+  quotas.sort((a, b) {
+    final aExpire = a.info.expire;
+    final bExpire = b.info.expire;
+    if (aExpire == 0 || bExpire == 0) {
+      return aExpire == bExpire ? 0 : (aExpire == 0 ? 1 : -1);
+    }
+    return aExpire.compareTo(bExpire);
+  });
+  return quotas;
+}
+
+/// A profile's own subscription headers come first. A config built from proxy
+/// providers carries none of its own, so it reports the quota those providers
+/// were fetched with instead, summed because the card shows one meter.
+ProfileQuota? profileQuotaOf(
+  Profile? profile,
+  Iterable<ExternalProvider> providers,
+) {
+  final own = profile?.subscriptionInfo;
+  if (own != null && own.total > 0) {
+    return (info: own, fromProviders: false);
+  }
+  final info = _providersQuota(providerQuotasOf(providers));
+  if (info != null) {
+    return (info: info, fromProviders: true);
+  }
+  // An unlimited plan reports an expiry and no quota.
+  return own != null && own.expire > 0
+      ? (info: own, fromProviders: false)
+      : null;
+}
+
+SubscriptionInfo? _providersQuota(List<ProviderQuota> quotas) {
+  var upload = 0;
+  var download = 0;
+  var total = 0;
+  var expire = 0;
+  for (final quota in quotas) {
+    final info = quota.info;
+    upload += info.upload;
+    download += info.download;
+    total += info.total;
+    // Providers expire independently; the earliest deadline is the one worth
+    // warning about.
+    if (info.expire > 0 && (expire == 0 || info.expire < expire)) {
+      expire = info.expire;
+    }
+  }
+  if (total <= 0) {
+    return null;
+  }
+  return SubscriptionInfo(
+    upload: upload,
+    download: download,
+    total: total,
+    expire: expire,
+  );
+}
+
 ProfileStats profileStatsOf(
   ConfigCounts counts,
   List<ExternalProvider> providers,
@@ -164,7 +238,10 @@ class _ProfileDetailSheetState extends ConsumerState<ProfileDetailSheet>
     final providers = ref.watch(providersProvider);
     final isUpdating = ref.watch(isUpdatingProvider(profile.updatingKey));
     final appLocalizations = context.appLocalizations;
-    final subscriptionInfo = profile.subscriptionInfo;
+    final quota = profileQuotaOf(profile, providers);
+    final providerQuotas = quota?.fromProviders ?? false
+        ? providerQuotasOf(providers)
+        : const <ProviderQuota>[];
     return CommonScaffold(
       title: profile.realLabel,
       iconActions: [
@@ -198,15 +275,25 @@ class _ProfileDetailSheetState extends ConsumerState<ProfileDetailSheet>
                       },
                       failed: configCountsFailed,
                     ),
-                    if (subscriptionInfo != null && subscriptionInfo.total > 0)
+                    if (quota != null &&
+                        !quota.fromProviders &&
+                        quota.info.total > 0)
                       generateSection(
                         title: appLocalizations.subscriptionInfo,
                         items: [
                           ListItem(
                             title: SubscriptionInfoView(
-                              subscriptionInfo: subscriptionInfo,
+                              subscriptionInfo: quota.info,
                             ),
                           ),
+                        ],
+                      ),
+                    if (providerQuotas.isNotEmpty)
+                      generateSection(
+                        title: appLocalizations.providerSubscriptionInfo,
+                        items: [
+                          for (final providerQuota in providerQuotas)
+                            _ProviderQuotaItem(quota: providerQuota),
                         ],
                       ),
                     generateSection(
@@ -343,6 +430,27 @@ class _InfoRow extends StatelessWidget {
             .of(context)
             .copyWith(color: context.colorScheme.onSurfaceVariant),
         child: value,
+      ),
+    );
+  }
+}
+
+class _ProviderQuotaItem extends StatelessWidget {
+  const _ProviderQuotaItem({required this.quota});
+
+  final ProviderQuota quota;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListItem(
+      title: ChipTitle(
+        title: quota.provider.name,
+        expire: quota.info.expireDate,
+        permanent: true,
+      ),
+      subtitle: SubscriptionInfoView(
+        subscriptionInfo: quota.info,
+        showExpire: false,
       ),
     );
   }

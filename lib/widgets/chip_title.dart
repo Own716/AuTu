@@ -5,19 +5,26 @@ import 'package:outo/ui/ui.dart';
 import 'package:material_ui/material_ui.dart';
 
 class ExpireChip extends StatelessWidget {
-  final DateTime expire;
+  /// Null stands for a provider that never expires.
+  final DateTime? expire;
 
-  const ExpireChip({super.key, required this.expire});
+  const ExpireChip({super.key, this.expire});
 
   static const _padding = EdgeInsets.symmetric(horizontal: 8, vertical: 2);
 
-  static double widthOf(BuildContext context, DateTime expire) =>
-      chipLabelWidth(context, expire.show) + _padding.horizontal;
+  static String _labelOf(BuildContext context, DateTime? expire) =>
+      expire?.show ?? context.appLocalizations.infiniteTime;
+
+  static double widthOf(BuildContext context, DateTime? expire) =>
+      chipLabelWidth(context, _labelOf(context, expire)) + _padding.horizontal;
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = context.colorScheme;
-    final color = expire.isBeforeNow ? colorScheme.error : colorScheme.primary;
+    final expire = this.expire;
+    final color = expire != null && expire.isBeforeNow
+        ? colorScheme.error
+        : colorScheme.primary;
     return Tooltip(
       message: context.appLocalizations.expireTime,
       child: DecoratedBox(
@@ -28,7 +35,7 @@ class ExpireChip extends StatelessWidget {
         child: Padding(
           padding: _padding,
           child: Text(
-            expire.show,
+            _labelOf(context, expire),
             maxLines: 1,
             style: AppTextStyle.caption1
                 .of(context, emphasized: true)
@@ -46,6 +53,11 @@ class ChipTitle extends StatelessWidget {
   final String title;
   final String? chip;
   final DateTime? expire;
+
+  /// Shows the expiry chip as "long term" for a provider without one, so a
+  /// resource that never expires still reads like one that does.
+  final bool permanent;
+
   final TextStyle? style;
 
   const ChipTitle({
@@ -53,12 +65,15 @@ class ChipTitle extends StatelessWidget {
     required this.title,
     this.chip,
     this.expire,
+    this.permanent = false,
     this.style,
   });
 
   static const _gap = 8.0;
 
-  bool _fitsExpire(BuildContext context, double maxWidth, DateTime expire) {
+  bool get _showsExpiry => expire != null || permanent;
+
+  bool _fitsExpire(BuildContext context, double maxWidth, DateTime? expire) {
     final chip = this.chip;
     final titleWidth = MeasureScope.of(context)
         .computeTextSize(
@@ -88,7 +103,7 @@ class ChipTitle extends StatelessWidget {
       overflow: TextOverflow.ellipsis,
       textWidthBasis: TextWidthBasis.longestLine,
     );
-    if (chip == null && expire == null) {
+    if (chip == null && !_showsExpiry) {
       return text;
     }
     final colorScheme = context.colorScheme;
@@ -102,10 +117,10 @@ class ChipTitle extends StatelessWidget {
             color: context.raisedSurfaceLevel.colorOf(colorScheme),
             foregroundColor: colorScheme.onSurfaceVariant,
           ),
-        if (showExpire && expire != null) ExpireChip(expire: expire),
+        if (showExpire) ExpireChip(expire: expire),
       ],
     );
-    if (expire == null) {
+    if (!_showsExpiry) {
       return row(showExpire: false);
     }
     return LayoutBuilder(
