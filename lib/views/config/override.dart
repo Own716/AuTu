@@ -1,4 +1,4 @@
-﻿import 'package:outo/common/common.dart';
+import 'package:outo/common/common.dart';
 import 'package:outo/enum/enum.dart';
 import 'package:outo/features/form/form.dart';
 import 'package:outo/l10n/l10n.dart';
@@ -298,10 +298,12 @@ class TextOverrideField<M> extends ValueOverrideField<M, String> {
     super.update, {
     required this.maxLength,
     this.validator,
+    this.allowEmpty = true,
   });
 
   final int maxLength;
   final ConfigValidator? validator;
+  final bool allowEmpty;
 
   @override
   Widget build(
@@ -317,7 +319,7 @@ class TextOverrideField<M> extends ValueOverrideField<M, String> {
       maxLength: maxLength,
       normalize: (value) => value.trim(),
       validator: validator,
-      allowEmpty: true,
+      allowEmpty: allowEmpty,
     );
   }
 }
@@ -470,8 +472,8 @@ class OverrideView<K extends OverrideKey, M> extends ConsumerWidget {
       content: raw,
       schema: quickEdit.schema,
       readOnly: false,
-      onPop: (_, _, content) =>
-          _handleQuickEditPop(ref, quickEdit, content, raw),
+      onPop: (_, _, content) async =>
+          _handleQuickEditPop(ref, quickEdit, await content.readText(), raw),
     );
     return sheetNavigatorOf(context).push(
       context.isMobileView
@@ -582,9 +584,10 @@ class _OverrideList<K extends OverrideKey, M> extends ConsumerWidget {
     final keys = ref.watch(spec.target.select((state) => state.keys));
     final entries = spec.values.where(keys.contains);
     return ListView(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 16,
-      ).copyWith(top: context.contentTopPadding, bottom: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 16).copyWith(
+        top: context.sectionsTopPadding,
+        bottom: 16 + context.bottomInset,
+      ),
       children: [
         if (spec.target.issues case final issues?)
           CustomIssuesBanner(issues: ref.watch(issues)),
@@ -616,6 +619,55 @@ class _OverrideList<K extends OverrideKey, M> extends ConsumerWidget {
           child: ListFooter(text: spec.target.description(appLocalizations)),
         ),
       ],
+    );
+  }
+}
+
+class OverrideSection<K extends OverrideKey, M> extends ConsumerWidget {
+  const OverrideSection({
+    super.key,
+    required this.title,
+    required this.spec,
+    this.items = const [],
+    this.footer = const [],
+  });
+
+  final String title;
+  final OverrideSpec<K, M> spec;
+
+  /// Keyed, since the section animates its rows in and out.
+  final List<Widget> items;
+  final List<String> footer;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final appLocalizations = context.appLocalizations;
+    final picked = ref.watch(spec.target.select((state) => state.keys));
+    final listed = [
+      for (final key in spec.values)
+        if (picked.contains(key)) key,
+    ];
+    void handleAdd() => showOverrideAddSheet(context, ref, spec);
+    return generateAnimatedSection(
+      title: title,
+      items: [
+        ...items,
+        for (final key in listed)
+          OverrideEntry(key: ValueKey(key), spec: spec, overrideKey: key),
+        if (listed.length < spec.values.length)
+          FormRow(
+            key: const ValueKey(#add),
+            leading: EntryButton.add(onPressed: handleAdd),
+            title: spec.target.addEntry(appLocalizations),
+            titleStyle: TextStyle(color: context.colorScheme.primary),
+            onPressed: handleAdd,
+          ),
+      ],
+      footer: [
+        ...footer,
+        spec.target.description(appLocalizations),
+        ?spec.footerOf(listed, appLocalizations),
+      ].join('\n'),
     );
   }
 }

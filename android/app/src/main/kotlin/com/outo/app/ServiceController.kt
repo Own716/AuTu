@@ -1,4 +1,4 @@
-﻿package com.outo.app
+package com.outo.app
 
 import android.content.ComponentName
 import android.content.Context
@@ -11,6 +11,7 @@ import com.outo.app.common.GlobalState
 import com.outo.app.common.intent
 import com.outo.app.core.Core
 import com.outo.app.service.ManagedService
+import com.outo.app.service.NetworkObserver
 import com.outo.app.service.ProxyService
 import com.outo.app.service.ServiceConfig
 import com.outo.app.service.VpnService
@@ -57,6 +58,7 @@ object ServiceController {
         initParams: String,
         setupParams: String,
     ): Result<String> = runCatching {
+        NetworkObserver.start()
         suspendCancellableCoroutine { continuation ->
             Core.quickSetup(initParams, setupParams) { result ->
                 continuation.resume(result.orEmpty())

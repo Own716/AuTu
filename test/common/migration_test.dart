@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 
 import 'package:outo/common/migration.dart';
 import 'package:outo/common/constant.dart';

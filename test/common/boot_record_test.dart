@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 
 import 'package:outo/common/boot_record.dart';
 import 'package:flutter_test/flutter_test.dart';

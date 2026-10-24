@@ -1,4 +1,4 @@
-﻿import 'dart:math' as math;
+import 'dart:math' as math;
 
 import 'package:code_forge/code_forge.dart' show CodeForgeSuggestionDetails;
 import 'package:outo/ui/ui.dart';

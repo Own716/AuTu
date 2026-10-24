@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 
 import 'package:outo/core/core.dart';
 import 'package:outo/core/interface.dart';

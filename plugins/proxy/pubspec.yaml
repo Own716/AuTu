@@ -1,4 +1,4 @@
-﻿name: proxy
+name: proxy
 description: OuTo system proxy integration for Windows, macOS, and Linux.
 version: 0.0.1
 publish_to: none

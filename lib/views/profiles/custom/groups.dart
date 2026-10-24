@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:outo/common/common.dart';
 import 'package:outo/enum/enum.dart';
@@ -827,7 +827,7 @@ class _EditProxyGroupViewState extends ConsumerState<EditProxyGroupView> {
       title: context.appLocalizations.hashByInUser,
       leading: leading,
       onPressed: handleChangeHashKey,
-      trailing: Switch(
+      trailing: CommonSwitch(
         value: value,
         onChanged: (_) {
           handleChangeHashKey();
@@ -956,7 +956,7 @@ class _EditProxyGroupViewState extends ConsumerState<EditProxyGroupView> {
       title: appLocalizations.hideFromList,
       leading: leading,
       onPressed: handleChangeHidden,
-      trailing: Switch(
+      trailing: CommonSwitch(
         value: hidden ?? false,
         onChanged: (_) {
           handleChangeHidden();
@@ -979,7 +979,7 @@ class _EditProxyGroupViewState extends ConsumerState<EditProxyGroupView> {
       title: appLocalizations.testWhenUsed,
       leading: leading,
       onPressed: handleChangeLazy,
-      trailing: Switch(
+      trailing: CommonSwitch(
         value: value,
         onChanged: (_) {
           handleChangeLazy();
@@ -1002,7 +1002,7 @@ class _EditProxyGroupViewState extends ConsumerState<EditProxyGroupView> {
       title: appLocalizations.disableUDP,
       leading: leading,
       onPressed: handleChangeDisableUDP,
-      trailing: Switch(
+      trailing: CommonSwitch(
         value: disableUDP ?? false,
         onChanged: (_) {
           handleChangeDisableUDP();
@@ -1374,7 +1374,7 @@ class _EditProxyGroupViewState extends ConsumerState<EditProxyGroupView> {
           SliverPadding(
             padding: const EdgeInsets.symmetric(
               horizontal: 16,
-            ).copyWith(bottom: 20),
+            ).copyWith(bottom: 20 + context.bottomInset),
             sliver: SliverList.list(
               children: [
                 _buildOptions(emptyFallbackIssues: emptyFallbackIssues),

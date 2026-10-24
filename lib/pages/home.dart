@@ -1,4 +1,4 @@
-﻿import 'package:outo/common/common.dart';
+import 'package:outo/common/common.dart';
 import 'package:outo/enum/enum.dart';
 import 'package:outo/manager/app_manager.dart';
 import 'package:outo/models/common.dart';

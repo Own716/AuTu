@@ -1,4 +1,4 @@
-﻿// ignore_for_file: constant_identifier_names
+// ignore_for_file: constant_identifier_names
 
 import 'dart:io';
 
@@ -389,6 +389,22 @@ enum TunOverrideKey with OverrideKey {
   final String path;
 }
 
+/// Top-level profile keys, except `test-url`: the Core takes that one apart
+/// as the URL of every group and provider that names none.
+@JsonEnum(valueField: 'path')
+enum GeneralOverrideKey with OverrideKey {
+  testUrl('test-url'),
+  unifiedDelay('unified-delay'),
+  tcpConcurrent('tcp-concurrent'),
+  ipv6('ipv6'),
+  geodataLoader('geodata-loader');
+
+  const GeneralOverrideKey(this.path);
+
+  @override
+  final String path;
+}
+
 enum ExternalControllerStatus {
   @JsonValue('')
   close(''),
@@ -461,6 +477,7 @@ enum FunctionTag {
   coreErrorNotifier,
   dialerLoopNotifier,
   reloadPackages,
+  clearDnsCache,
 }
 
 enum DashboardWidget {
@@ -682,7 +699,7 @@ extension RuleActionExt on RuleAction {
   }
 }
 
-enum ProxyFieldKind { text, secret, number, toggle, choice, list }
+enum ProxyFieldKind { text, secret, number, toggle, choice, list, map }
 
 /// A key of a proxy definition the form edits, at [path] since the core reads
 /// transport, TLS and plugin settings from maps of their own.
@@ -708,9 +725,27 @@ enum ProxyField {
   flow(['flow'], ProxyFieldKind.choice),
   wsPath(['ws-opts', 'path']),
   wsHost(['ws-opts', 'headers', 'Host']),
+  wsHeaders(['ws-opts', 'headers'], ProxyFieldKind.map),
+  wsMaxEarlyData(['ws-opts', 'max-early-data'], ProxyFieldKind.number),
+  wsEarlyDataHeaderName(['ws-opts', 'early-data-header-name']),
+  wsHttpUpgrade(['ws-opts', 'v2ray-http-upgrade'], ProxyFieldKind.toggle),
+  wsHttpUpgradeFastOpen([
+    'ws-opts',
+    'v2ray-http-upgrade-fast-open',
+  ], ProxyFieldKind.toggle),
+  httpMethod(['http-opts', 'method']),
+  httpPath(['http-opts', 'path'], ProxyFieldKind.list),
+  httpHost(['http-opts', 'headers', 'Host'], ProxyFieldKind.list),
+  httpHeaders(['http-opts', 'headers'], ProxyFieldKind.map),
+  h2Host(['h2-opts', 'host'], ProxyFieldKind.list),
+  h2Path(['h2-opts', 'path']),
   grpcServiceName(['grpc-opts', 'grpc-service-name']),
   xhttpPath(['xhttp-opts', 'path']),
   xhttpHost(['xhttp-opts', 'host']),
+  mkcpSeed(['mkcp-opts', 'seed'], ProxyFieldKind.secret),
+  mkcpHeader(['mkcp-opts', 'header'], ProxyFieldKind.choice),
+  mekyaUrl(['mekya-opts', 'url']),
+  headers(['headers'], ProxyFieldKind.map),
   tls(['tls'], ProxyFieldKind.toggle),
   sni(['sni']),
   servername(['servername']),
@@ -722,6 +757,20 @@ enum ProxyField {
   plugin(['plugin'], ProxyFieldKind.choice),
   pluginMode(['plugin-opts', 'mode']),
   pluginHost(['plugin-opts', 'host']),
+  pluginPath(['plugin-opts', 'path']),
+  pluginUsername(['plugin-opts', 'username']),
+  pluginPassword(['plugin-opts', 'password'], ProxyFieldKind.secret),
+  pluginVersion(['plugin-opts', 'version'], ProxyFieldKind.number),
+  pluginVersionHint(['plugin-opts', 'version-hint'], ProxyFieldKind.choice),
+  pluginRestlsScript(['plugin-opts', 'restls-script']),
+  pluginKey(['plugin-opts', 'key'], ProxyFieldKind.secret),
+  pluginCrypt(['plugin-opts', 'crypt'], ProxyFieldKind.choice),
+  pluginTls(['plugin-opts', 'tls'], ProxyFieldKind.toggle),
+  pluginMux(['plugin-opts', 'mux'], ProxyFieldKind.toggle),
+  pluginSkipCertVerify([
+    'plugin-opts',
+    'skip-cert-verify',
+  ], ProxyFieldKind.toggle),
   udpOverTcp(['udp-over-tcp'], ProxyFieldKind.toggle),
   protocolParam(['protocol-param']),
   obfsParam(['obfs-param']),

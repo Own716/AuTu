@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:outo/providers/app.dart';
 import 'package:outo/ui/paged_sheet.dart';

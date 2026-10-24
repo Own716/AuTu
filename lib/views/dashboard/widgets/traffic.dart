@@ -1,4 +1,4 @@
-﻿import 'dart:math' as math;
+import 'dart:math' as math;
 
 import 'package:outo/common/common.dart';
 import 'package:outo/models/models.dart';

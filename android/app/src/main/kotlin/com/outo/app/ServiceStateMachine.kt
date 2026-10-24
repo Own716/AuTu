@@ -1,4 +1,4 @@
-﻿package com.outo.app
+package com.outo.app
 
 import com.outo.app.common.RunIntentArbiter
 import com.outo.app.models.SharedState

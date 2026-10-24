@@ -1,4 +1,4 @@
-﻿import 'package:collection/collection.dart';
+import 'package:collection/collection.dart';
 import 'package:outo/providers/config.dart';
 import 'package:outo/ui/icons/icons.dart';
 import 'package:outo/ui/ui.dart';

@@ -1,4 +1,4 @@
-﻿import 'package:code_forge/code_forge.dart';
+import 'package:code_forge/code_forge.dart';
 import 'package:outo/enum/enum.dart';
 import 'package:outo/features/editor/editor.dart';
 import 'package:flutter_test/flutter_test.dart';

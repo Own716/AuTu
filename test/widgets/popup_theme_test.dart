@@ -1,4 +1,4 @@
-﻿import 'package:outo/providers/app.dart';
+import 'package:outo/providers/app.dart';
 import 'package:outo/ui/ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';

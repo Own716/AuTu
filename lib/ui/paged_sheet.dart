@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:outo/ui/deferred_push.dart';
 import 'package:outo/ui/drag_back.dart';

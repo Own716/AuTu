@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:outo/common/constant.dart';
 import 'package:outo/common/preferences.dart';

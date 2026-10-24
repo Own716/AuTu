@@ -1,4 +1,4 @@
-﻿import 'package:outo/common/string.dart';
+import 'package:outo/common/string.dart';
 import 'package:test/test.dart';
 
 void main() {

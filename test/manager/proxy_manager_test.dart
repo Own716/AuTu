@@ -1,4 +1,4 @@
-﻿import 'package:outo/manager/proxy_manager.dart';
+import 'package:outo/manager/proxy_manager.dart';
 import 'package:outo/models/models.dart';
 import 'package:outo/providers/app.dart';
 import 'package:outo/providers/config.dart';

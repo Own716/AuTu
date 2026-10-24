@@ -1,4 +1,4 @@
-﻿package com.outo.app
+package com.outo.app
 
 import android.content.BroadcastReceiver
 import android.content.Context

@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:math';
 
 import 'package:outo/common/common.dart';
@@ -189,7 +189,10 @@ class ProxiesTabViewState extends ConsumerState<ProxiesTabView>
               child: Column(
                 children: [
                   Padding(
-                    padding: const EdgeInsets.only(top: 4, bottom: 16),
+                    padding: EdgeInsets.only(
+                      top: context.contentTopPadding - context.appBarInset,
+                      bottom: 16,
+                    ),
                     child: GroupTabs(controller: controller, groups: groups),
                   ),
                   Expanded(
@@ -259,7 +262,7 @@ class ProxyGroupView extends ConsumerWidget {
         padding: EdgeInsets.only(
           left: 16,
           right: 16,
-          bottom: 16 + BottomInsetScope.of(context),
+          bottom: 16 + context.bottomInset,
         ),
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: columns,

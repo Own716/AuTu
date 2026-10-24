@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 
 import 'package:outo/common/network.dart';
 import 'package:flutter_test/flutter_test.dart';

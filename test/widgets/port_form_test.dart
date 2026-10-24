@@ -1,4 +1,4 @@
-﻿import 'package:outo/features/form/form.dart';
+import 'package:outo/features/form/form.dart';
 import 'package:outo/providers/app.dart';
 import 'package:outo/providers/config.dart';
 import 'package:outo/providers/database.dart';

@@ -1,4 +1,4 @@
-﻿import 'dart:ui';
+import 'dart:ui';
 
 import 'package:outo/enum/enum.dart';
 import 'package:outo/l10n/l10n.dart';

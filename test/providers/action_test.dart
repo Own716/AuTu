@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:outo/core/controller.dart';
 import 'package:outo/core/desktop/model.dart';

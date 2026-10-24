@@ -1,4 +1,4 @@
-﻿import 'dart:math';
+import 'dart:math';
 
 import 'package:outo/ui/color.dart';
 import 'package:material_color_utilities/hct/hct.dart';

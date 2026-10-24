@@ -1,4 +1,4 @@
-﻿import 'package:outo/ui/deferred_push.dart';
+import 'package:outo/ui/deferred_push.dart';
 import 'package:outo/ui/drag_back.dart';
 import 'package:outo/ui/keyboard_inset_hold.dart';
 import 'package:outo/ui/surface.dart';

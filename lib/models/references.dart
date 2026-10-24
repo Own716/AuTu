@@ -1,4 +1,4 @@
-﻿/// `test/models/references_test.dart` fails when the core reads a rule set or
+/// `test/models/references_test.dart` fails when the core reads a rule set or
 /// proxy name somewhere this file does not.
 library;
 

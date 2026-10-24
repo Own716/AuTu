@@ -1,4 +1,4 @@
-﻿import 'package:outo/manager/theme_manager.dart';
+import 'package:outo/manager/theme_manager.dart';
 import 'package:outo/models/models.dart';
 import 'package:outo/providers/config.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

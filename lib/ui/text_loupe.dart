@@ -1,4 +1,4 @@
-﻿import 'dart:math' as math;
+import 'dart:math' as math;
 
 import 'package:outo/ui/shape.dart';
 import 'package:flutter/foundation.dart' show ValueListenable;

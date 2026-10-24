@@ -1,4 +1,4 @@
-﻿import 'dart:ui' as ui;
+import 'dart:ui' as ui;
 
 import 'package:outo/widgets/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';

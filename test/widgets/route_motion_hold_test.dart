@@ -1,4 +1,4 @@
-﻿import 'package:outo/providers/app.dart';
+import 'package:outo/providers/app.dart';
 import 'package:outo/ui/paged_sheet.dart';
 import 'package:outo/ui/route_motion_hold.dart';
 import 'package:outo/ui/sheet.dart';

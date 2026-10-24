@@ -1,4 +1,4 @@
-﻿import 'package:outo/ui/shape.dart';
+import 'package:outo/ui/shape.dart';
 import 'package:material_ui/material_ui.dart';
 
 const tableColumnMinWidth = 48.0;

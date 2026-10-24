@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:outo/common/common.dart';
 import 'package:outo/core/controller.dart';
@@ -165,7 +165,7 @@ class _ConnectionsViewState extends ConsumerState<ConnectionsView>
                 controller: _scrollController,
                 padding: EdgeInsets.only(
                   top: context.contentTopPadding,
-                  bottom: 16 + BottomInsetScope.of(context),
+                  bottom: 16 + context.bottomInset,
                 ),
                 trackerInfos: connections,
                 table: table,

@@ -1,4 +1,4 @@
-﻿package com.outo.app.core
+package com.outo.app.core
 
 import com.outo.app.core.mobile.Mobile
 import com.outo.app.core.mobile.ResultHandler

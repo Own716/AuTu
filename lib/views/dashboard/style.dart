@@ -1,4 +1,4 @@
-﻿import 'package:outo/common/common.dart';
+import 'package:outo/common/common.dart';
 import 'package:outo/ui/ui.dart';
 import 'package:intl/intl.dart' show NumberFormat;
 import 'package:material_ui/material_ui.dart';

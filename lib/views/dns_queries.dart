@@ -1,7 +1,9 @@
-﻿import 'package:outo/common/common.dart';
+import 'package:outo/common/common.dart';
+import 'package:outo/core/method.dart';
 import 'package:outo/enum/enum.dart';
 import 'package:outo/models/models.dart';
 import 'package:outo/providers/providers.dart';
+import 'package:outo/ui/icons/icons.dart';
 import 'package:outo/widgets/widgets.dart';
 import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
@@ -95,6 +97,28 @@ class _DnsQueriesViewState extends ConsumerState<DnsQueriesView>
     }, duration: renderThrottleDuration);
   }
 
+  Future<void> _clearDnsCache() async {
+    final appLocalizations = context.appLocalizations;
+    var cleared = false;
+    try {
+      cleared = await ref.read(coreHandlerProvider).clearDnsCache();
+    } catch (error) {
+      commonPrint.log(
+        'clearDnsCache error: $error',
+        logLevel: coreFailureLogLevel(error),
+      );
+    }
+    if (!mounted) {
+      return;
+    }
+    context.showNotifier(
+      cleared
+          ? appLocalizations.dnsCacheCleared
+          : appLocalizations.clearDnsCacheFailed,
+      level: cleared ? MessageLevel.success : MessageLevel.error,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final appLocalizations = context.appLocalizations;
@@ -102,6 +126,13 @@ class _DnsQueriesViewState extends ConsumerState<DnsQueriesView>
       title: PageLabel.dns.label,
       searchState: AppBarSearchState(onSearch: _listController.search),
       onKeywordsUpdate: _listController.updateKeywords,
+      iconActions: [
+        IconButtonData(
+          glyph: AppGlyphs.broom,
+          tooltip: appLocalizations.clearDnsCache,
+          onPressed: _clearDnsCache,
+        ),
+      ],
       body: ValueListenableBuilder<DnsQueriesState>(
         valueListenable: _listController,
         builder: (context, state, _) {
@@ -147,7 +178,7 @@ class _DnsQueriesViewState extends ConsumerState<DnsQueriesView>
                       controller: _scrollController,
                       padding: EdgeInsets.only(
                         top: context.contentTopPadding,
-                        bottom: 16 + BottomInsetScope.of(context),
+                        bottom: 16 + context.bottomInset,
                       ),
                       itemCount: dnsQueries.length,
                       extentEstimation:
@@ -395,9 +426,10 @@ class DnsQueryDetailView extends StatelessWidget {
       (appLocalizations.delay, '${dnsQuery.delay} ms'),
     ];
     return ListView(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 16,
-      ).copyWith(bottom: 20, top: context.contentTopPadding),
+      padding: const EdgeInsets.symmetric(horizontal: 16).copyWith(
+        bottom: 20 + context.bottomInset,
+        top: context.sectionsTopPadding,
+      ),
       children: [
         generateSection(
           title: appLocalizations.basicInfo,

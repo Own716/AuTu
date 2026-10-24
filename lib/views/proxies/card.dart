@@ -35,6 +35,14 @@ void selectGroupProxy(
   );
 }
 
+/// Built-ins and groups have no definition, and a custom profile's own proxies
+/// are the local proxies already.
+bool _isAddableToLocal(Proxy proxy, {required bool isCustomProfile}) {
+  return (proxy.providerName != null || !isCustomProfile) &&
+      !reservedCustomProxyNames.contains(proxy.name) &&
+      GroupTypeExtension.getGroupType(proxy.type) == null;
+}
+
 class ProxyCard extends ConsumerWidget {
   final String groupName;
   final Proxy proxy;
@@ -75,6 +83,52 @@ class ProxyCard extends ConsumerWidget {
         ),
       );
     }
+  }
+
+  void _handleSelect(WidgetRef ref) {
+    selectGroupProxy(
+      ref,
+      groupName: groupName,
+      groupType: groupType,
+      proxyName: proxy.name,
+    );
+  }
+
+  void _handleAddToLocalProxies(WidgetRef ref) {
+    final proxiesAction = ref.read(proxiesActionProvider.notifier);
+    globalState.safeRun(() => proxiesAction.addToLocalProxies(proxy.name));
+  }
+
+  List<CommonPopupMenuItem> _menuItems(
+    BuildContext context,
+    WidgetRef ref, {
+    required bool inUse,
+    required bool pinned,
+    required bool addable,
+  }) {
+    final appLocalizations = context.appLocalizations;
+    return [
+      if (groupType == GroupType.Selector)
+        CommonPopupMenuItem(
+          glyph: AppGlyphs.checkCircle,
+          label: appLocalizations.select,
+          checked: inUse,
+          onPressed: () => _handleSelect(ref),
+        )
+      else if (groupType.isComputedSelected)
+        CommonPopupMenuItem(
+          glyph: AppGlyphs.pin,
+          label: appLocalizations.preferred,
+          checked: pinned,
+          onPressed: () => _handleSelect(ref),
+        ),
+      if (addable)
+        CommonPopupMenuItem(
+          glyph: AppGlyphs.listAdd,
+          label: appLocalizations.addToLocalProxies,
+          onPressed: () => _handleAddToLocalProxies(ref),
+        ),
+    ];
   }
 
   @override
@@ -481,6 +535,13 @@ void _showProxyContextMenu(
   final anchor = origin & renderBox.size;
   HapticFeedback.mediumImpact();
 
+  final isCustomProfile = ref.read(
+    currentProfileProvider.select(
+      (profile) => profile?.type == ProfileType.custom,
+    ),
+  );
+  final addable = _isAddableToLocal(proxy, isCustomProfile: isCustomProfile);
+
   final navigator = Navigator.of(cardContext);
   navigator.push(
     CommonPopupRoute<void>(
@@ -489,6 +550,15 @@ void _showProxyContextMenu(
       barrierLabel: 'Dismiss',
       builder: (_) => CommonPopupMenu(
         items: [
+          if (addable)
+            CommonPopupMenuItem(
+              glyph: AppGlyphs.listAdd,
+              label: cardContext.appLocalizations.addToLocalProxies,
+              onPressed: () {
+                final proxiesAction = ref.read(proxiesActionProvider.notifier);
+                globalState.safeRun(() => proxiesAction.addToLocalProxies(proxy.name));
+              },
+            ),
           CommonPopupMenuItem(
             glyph: AppGlyphs.speed,
             label: '测试当前节点速度',

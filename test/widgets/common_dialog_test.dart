@@ -1,4 +1,4 @@
-﻿import 'package:outo/providers/app.dart';
+import 'package:outo/providers/app.dart';
 import 'package:outo/ui/ui.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';

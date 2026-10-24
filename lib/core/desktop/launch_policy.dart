@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 
 import 'package:outo/core/desktop/helper_client.dart';
 import 'package:outo/core/desktop/model.dart';

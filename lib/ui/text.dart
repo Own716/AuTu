@@ -1,4 +1,4 @@
-﻿import 'package:emoji_regex/emoji_regex.dart';
+import 'package:emoji_regex/emoji_regex.dart';
 import 'package:outo/ui/measure.dart';
 import 'package:outo/ui/text_style.dart';
 import 'package:material_ui/material_ui.dart';

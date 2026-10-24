@@ -1,4 +1,4 @@
-﻿import 'package:drift/native.dart';
+import 'package:drift/native.dart';
 import 'package:outo/core/controller.dart';
 import 'package:outo/core/interface.dart';
 import 'package:outo/database/database.dart' as db;

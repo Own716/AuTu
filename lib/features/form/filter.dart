@@ -1,4 +1,4 @@
-﻿import 'package:outo/models/models.dart';
+import 'package:outo/models/models.dart';
 import 'package:outo/providers/providers.dart';
 import 'package:outo/ui/ui.dart';
 import 'package:material_ui/material_ui.dart';

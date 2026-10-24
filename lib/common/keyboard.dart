@@ -1,4 +1,4 @@
-﻿import 'package:outo/enum/enum.dart';
+import 'package:outo/enum/enum.dart';
 import 'package:flutter/services.dart';
 
 import 'system.dart';

@@ -1,4 +1,4 @@
-﻿import 'package:outo/common/changelog.dart';
+import 'package:outo/common/changelog.dart';
 import 'package:outo/models/changelog.dart';
 import 'package:flutter_test/flutter_test.dart';
 

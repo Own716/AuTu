@@ -1,11 +1,11 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:outo/providers/providers.dart';
 import 'package:outo/providers/routed_probe.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 mixin ProbeStartHold<T extends ConsumerStatefulWidget> on ConsumerState<T> {
-  // A start's own probes often fail; its config re-apply asks again.
+  // A start's own probes often fail; the route epoch it moves asks again.
   static const _duration = Duration(seconds: 5);
 
   Timer? _hold;

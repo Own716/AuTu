@@ -1,4 +1,4 @@
-﻿import 'package:outo/models/profile.dart';
+import 'package:outo/models/profile.dart';
 import 'package:outo/pages/editor.dart';
 import 'package:outo/providers/action.dart';
 import 'package:material_ui/material_ui.dart';
@@ -13,8 +13,11 @@ class PreviewProfileView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return EditorPage(
       title: profile.realLabel,
-      load: () =>
-          ref.read(setupActionProvider.notifier).getProfileWithId(profile.id),
+      load: () async => CodeForgeDocument.fromText(
+        await ref
+            .read(setupActionProvider.notifier)
+            .getProfileWithId(profile.id),
+      ),
     );
   }
 }

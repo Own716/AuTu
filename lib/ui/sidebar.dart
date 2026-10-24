@@ -1,4 +1,4 @@
-﻿import 'dart:math' as math;
+import 'dart:math' as math;
 import 'dart:ui' show lerpDouble;
 
 import 'package:outo/ui/context.dart';

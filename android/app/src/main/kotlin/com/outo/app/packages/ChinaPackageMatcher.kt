@@ -1,4 +1,4 @@
-﻿package com.outo.app.packages
+package com.outo.app.packages
 
 /**
  * The prefixes in [CHINA_PACKAGE_REGEX] are matched *without* a trailing dot

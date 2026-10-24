@@ -1,4 +1,4 @@
-﻿import 'package:outo/ui/inherited.dart';
+import 'package:outo/ui/inherited.dart';
 import 'package:outo/ui/navigator_resizable.dart';
 import 'package:outo/ui/paged_sheet.dart';
 import 'package:outo/ui/sheet.dart';

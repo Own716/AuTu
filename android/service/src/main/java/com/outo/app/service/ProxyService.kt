@@ -1,4 +1,4 @@
-﻿package com.outo.app.service
+package com.outo.app.service
 
 import android.app.Service
 import android.content.Intent

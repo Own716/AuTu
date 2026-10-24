@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:outo/common/app_localizations.dart';
 import 'package:outo/common/indexing.dart';

@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:outo/ui/ui.dart';
 import 'package:material_ui/material_ui.dart';

@@ -1,4 +1,4 @@
-﻿import 'package:outo/common/common.dart';
+import 'package:outo/common/common.dart';
 import 'package:outo/enum/enum.dart';
 import 'package:outo/ui/ui.dart';
 import 'package:flutter/services.dart';

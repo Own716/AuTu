@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:drift/native.dart';
 // `Profiles`, `Scripts` and `ProxyGroups` name both a drift table and a

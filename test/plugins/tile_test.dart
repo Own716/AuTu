@@ -1,4 +1,4 @@
-﻿import 'package:outo/common/constant.dart';
+import 'package:outo/common/constant.dart';
 import 'package:outo/plugins/tile.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';

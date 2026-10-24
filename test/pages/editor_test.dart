@@ -1,4 +1,4 @@
-﻿import 'package:outo/pages/editor.dart';
+import 'package:outo/pages/editor.dart';
 import 'package:outo/providers/app.dart';
 import 'package:outo/ui/icons/icons.dart';
 import 'package:material_ui/material_ui.dart';

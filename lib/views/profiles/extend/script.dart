@@ -1,4 +1,4 @@
-﻿import 'package:outo/common/common.dart';
+import 'package:outo/common/common.dart';
 import 'package:outo/providers/providers.dart';
 import 'package:outo/views/config/scripts.dart';
 import 'package:outo/widgets/widgets.dart';
@@ -26,30 +26,25 @@ class ScriptContent extends ConsumerWidget {
     final scripts = ref.watch(scriptsProvider).value ?? [];
     return SliverMainAxisGroup(
       slivers: [
-        const SliverToBoxAdapter(child: SizedBox(height: 24)),
-        SliverToBoxAdapter(
-          child: Column(
-            children: [
-              InfoHeader(info: Info(label: appLocalizations.extendScript)),
-            ],
-          ),
-        ),
-        const SliverToBoxAdapter(child: SizedBox(height: 8)),
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: generateSection(
-              items: [
-                for (final script in scripts)
-                  _ScriptOption(
-                    label: script.label,
-                    isSelected: script.id == scriptId,
-                    onSelected: () {
-                      _handleChange(ref, profileId, script.id);
-                    },
-                  ),
-              ],
-            ),
+            child: ListHeader(title: appLocalizations.extendScript),
+          ),
+        ),
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: generateGroup([
+              for (final script in scripts)
+                _ScriptOption(
+                  label: script.label,
+                  isSelected: script.id == scriptId,
+                  onSelected: () {
+                    _handleChange(ref, profileId, script.id);
+                  },
+                ),
+            ]),
           ),
         ),
         const SliverToBoxAdapter(child: SizedBox(height: 16)),

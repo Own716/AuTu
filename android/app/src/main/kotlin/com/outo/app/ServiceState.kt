@@ -1,4 +1,4 @@
-﻿package com.outo.app
+package com.outo.app
 
 import com.outo.app.models.SharedState
 import io.flutter.embedding.engine.FlutterEngine

@@ -1,4 +1,4 @@
-﻿package com.outo.app.service.models
+package com.outo.app.service.models
 
 import java.util.Locale
 import org.junit.After

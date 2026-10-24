@@ -1,4 +1,4 @@
-﻿import 'package:outo/common/common.dart';
+import 'package:outo/common/common.dart';
 import 'package:outo/l10n/l10n.dart';
 import 'package:outo/models/clash_config.dart';
 import 'package:outo/ui/icons/icons.dart';
@@ -95,9 +95,10 @@ class _RulePresetSheetState extends State<RulePresetSheet> {
               tooltip: appLocalizations.confirm,
             ),
       body: ListView.builder(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 16,
-        ).copyWith(top: context.contentTopPadding, bottom: 20),
+        padding: const EdgeInsets.symmetric(horizontal: 16).copyWith(
+          top: context.contentTopPadding,
+          bottom: 20 + context.bottomInset,
+        ),
         itemCount: presets.length,
         itemBuilder: (context, index) {
           final preset = presets[index];

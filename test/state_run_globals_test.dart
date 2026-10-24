@@ -1,4 +1,4 @@
-﻿import 'package:outo/bootstrap.dart';
+import 'package:outo/bootstrap.dart';
 import 'package:outo/common/common.dart';
 import 'package:outo/providers/app.dart';
 import 'package:outo/providers/config.dart';

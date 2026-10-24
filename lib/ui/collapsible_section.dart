@@ -1,4 +1,4 @@
-﻿import 'dart:math' as math;
+import 'dart:math' as math;
 
 import 'package:outo/ui/context.dart';
 import 'package:outo/ui/icons/icons.dart';

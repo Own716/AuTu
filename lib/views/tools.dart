@@ -1,4 +1,4 @@
-﻿import 'package:outo/common/common.dart';
+import 'package:outo/common/common.dart';
 import 'package:outo/enum/enum.dart';
 import 'package:outo/l10n/l10n.dart';
 import 'package:outo/models/models.dart';
@@ -82,7 +82,6 @@ class _ToolViewState extends ConsumerState<ToolsView> {
             return Container();
           }
           return generateSection(
-            title: context.appLocalizations.more,
             items: state.navigationItems.map(_buildNavigationMenuItem),
           );
         },
@@ -100,8 +99,8 @@ class _ToolViewState extends ConsumerState<ToolsView> {
           padding: EdgeInsets.only(
             left: 16,
             right: 16,
-            top: context.appBarInset,
-            bottom: 20 + BottomInsetScope.of(context),
+            top: context.sectionsTopPadding,
+            bottom: 20 + context.bottomInset,
           ),
         ),
       ),

@@ -1,4 +1,4 @@
-﻿import 'package:outo/ui/context.dart';
+import 'package:outo/ui/context.dart';
 import 'package:outo/ui/dialog.dart';
 import 'package:outo/ui/icons/icons.dart';
 import 'package:outo/ui/l10n.dart';

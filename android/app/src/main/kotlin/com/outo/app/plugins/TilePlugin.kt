@@ -1,4 +1,4 @@
-﻿package com.outo.app.plugins
+package com.outo.app.plugins
 
 import com.outo.app.common.Components
 import com.outo.app.invokeMethodOnMainThread

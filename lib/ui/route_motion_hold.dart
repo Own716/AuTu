@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:outo/ui/navigator.dart';
 import 'package:outo/ui/sheet_navigator.dart';

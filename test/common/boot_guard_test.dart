@@ -1,4 +1,4 @@
-﻿import 'package:outo/common/boot_guard.dart';
+import 'package:outo/common/boot_guard.dart';
 import 'package:outo/common/boot_record.dart';
 import 'package:flutter_test/flutter_test.dart';
 

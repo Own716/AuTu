@@ -1,4 +1,4 @@
-﻿import 'dart:math';
+import 'dart:math';
 
 import 'package:outo/common/boot_record.dart';
 import 'package:outo/common/preferences.dart';

@@ -1,4 +1,4 @@
-﻿package com.outo.app.common
+package com.outo.app.common
 
 import com.google.gson.Gson
 import org.junit.Assert.assertEquals

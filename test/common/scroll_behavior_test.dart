@@ -1,4 +1,4 @@
-﻿import 'package:outo/common/common.dart';
+import 'package:outo/common/common.dart';
 import 'package:outo/ui/ui.dart';
 import 'package:flutter/gestures.dart';
 import 'package:material_ui/material_ui.dart';

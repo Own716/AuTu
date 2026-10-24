@@ -1,4 +1,4 @@
-﻿import 'dart:typed_data';
+import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:outo/common/webdav.dart';

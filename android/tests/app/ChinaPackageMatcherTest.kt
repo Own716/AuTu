@@ -1,4 +1,4 @@
-﻿package com.outo.app.packages
+package com.outo.app.packages
 
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertEquals

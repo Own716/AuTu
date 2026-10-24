@@ -1,4 +1,4 @@
-﻿import 'package:outo/core/controller.dart';
+import 'package:outo/core/controller.dart';
 import 'package:outo/core/interface.dart';
 import 'package:outo/enum/enum.dart';
 import 'package:outo/features/connection/tracker_info_list.dart';

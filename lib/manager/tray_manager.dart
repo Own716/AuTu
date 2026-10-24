@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:collection/collection.dart';
 import 'package:outo/common/common.dart';

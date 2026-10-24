@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:outo/common/cache.dart';
 import 'package:outo/common/common.dart';

@@ -1,4 +1,4 @@
-﻿import 'package:outo/ui/builder.dart';
+import 'package:outo/ui/builder.dart';
 import 'package:outo/ui/inherited.dart';
 import 'package:outo/widgets/active_polling.dart';
 import 'package:material_ui/material_ui.dart';

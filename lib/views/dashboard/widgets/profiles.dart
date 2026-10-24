@@ -1,4 +1,4 @@
-﻿import 'dart:math' as math;
+import 'dart:math' as math;
 
 import 'package:outo/common/common.dart';
 import 'package:outo/enum/enum.dart';
@@ -8,7 +8,6 @@ import 'package:outo/state.dart';
 import 'package:outo/ui/icons/icons.dart';
 import 'package:outo/views/dashboard/layout.dart';
 import 'package:outo/views/dashboard/style.dart';
-import 'package:outo/views/profiles/add.dart';
 import 'package:outo/views/profiles/custom/custom.dart';
 import 'package:outo/widgets/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -46,7 +45,7 @@ String _expiryText(BuildContext context, DateTime expiry) =>
 void _openProfile(BuildContext context, Profile? profile) {
   switch (profile) {
     case null:
-      showAddProfilePage(context);
+      showProfilesSheet(context);
     case Profile(type: ProfileType.custom, :final id):
       showCustomProfileSheet(context, id);
     case _:

@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 
 import 'package:outo/common/constant.dart';
 import 'package:outo/common/window.dart';

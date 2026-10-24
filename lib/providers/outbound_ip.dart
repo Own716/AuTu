@@ -1,4 +1,4 @@
-﻿import 'package:outo/common/service_probe.dart';
+import 'package:outo/common/service_probe.dart';
 import 'package:outo/models/models.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -29,22 +29,22 @@ class OutboundIpProbe extends _$OutboundIpProbe
       proxyName,
     );
     final value = parseOutboundIp(result);
-    final chains = result?.chains ?? const <String>[];
-    final exit = chains.firstOrNull;
+    final hits = result?.hits ?? const <RouteHit>[];
+    final exit = result?.chains.firstOrNull;
     return {
       target: ProbeAnswer(
         value: value,
         coreEpoch: result?.coreEpoch,
-        picksVersion: result?.picksVersion,
-        chains: chains,
+        routeVersion: result?.routeVersion,
+        hits: hits,
       ),
       // A node leaves through the same address whatever it is asked for.
       if (value != null && exit != null && exit != target)
         exit: ProbeAnswer(
           value: value,
           coreEpoch: result?.coreEpoch,
-          picksVersion: result?.picksVersion,
-          chains: [exit],
+          routeVersion: result?.routeVersion,
+          hits: result?.nodeHits ?? const [],
         ),
     };
   }

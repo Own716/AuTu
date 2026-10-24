@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 
 import 'package:outo/core/desktop/process_probe.dart';
 import 'package:flutter_test/flutter_test.dart';

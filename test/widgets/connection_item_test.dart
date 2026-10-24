@@ -1,4 +1,4 @@
-﻿import 'package:outo/common/common.dart';
+import 'package:outo/common/common.dart';
 import 'package:outo/models/models.dart';
 import 'package:outo/features/features.dart';
 import 'package:outo/widgets/widgets.dart';

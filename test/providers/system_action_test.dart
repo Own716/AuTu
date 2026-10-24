@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:ui' show Brightness, Color;
 
 import 'package:outo/common/app_ports.dart';

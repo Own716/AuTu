@@ -1,4 +1,4 @@
-﻿import 'package:outo/ui/icons/icons.dart';
+import 'package:outo/ui/icons/icons.dart';
 import 'package:outo/ui/inherited.dart';
 import 'package:outo/ui/models.dart';
 import 'package:outo/ui/scaffold.dart';

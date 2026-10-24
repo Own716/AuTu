@@ -1,4 +1,4 @@
-﻿import 'package:outo/providers/providers.dart';
+import 'package:outo/providers/providers.dart';
 import 'package:outo/state.dart';
 import 'package:outo/widgets/widgets.dart';
 import 'package:material_ui/material_ui.dart';

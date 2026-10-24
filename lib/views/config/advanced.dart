@@ -1,4 +1,4 @@
-﻿import 'package:outo/common/common.dart';
+import 'package:outo/common/common.dart';
 import 'package:outo/ui/icons/icons.dart';
 import 'package:outo/ui/ui.dart';
 import 'package:outo/views/config/dns.dart';
@@ -42,9 +42,10 @@ class AdvancedConfigView extends StatelessWidget {
     return BaseScaffold(
       title: appLocalizations.advancedConfig,
       body: ListView(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 16,
-        ).copyWith(top: context.contentTopPadding, bottom: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 16).copyWith(
+          top: context.sectionsTopPadding,
+          bottom: 16 + context.bottomInset,
+        ),
         children: [generateSection(items: items)],
       ),
     );

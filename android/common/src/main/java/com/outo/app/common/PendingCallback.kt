@@ -1,4 +1,4 @@
-﻿package com.outo.app.common
+package com.outo.app.common
 
 /**
  * Only the newest request is ever pending: [replace] settles the request it

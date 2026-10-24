@@ -6,6 +6,7 @@ import 'package:outo/common/common.dart';
 import 'package:outo/common/window.dart';
 import 'package:outo/bootstrap.dart';
 import 'package:outo/common/system_dns.dart';
+import 'package:outo/enum/enum.dart';
 import 'package:outo/l10n/l10n.dart';
 import 'package:outo/manager/hotkey_manager.dart';
 import 'package:outo/manager/manager.dart';
@@ -136,6 +137,14 @@ class ApplicationState extends ConsumerState<Application> {
     final hasVpn = results.contains(ConnectivityResult.vpn);
     if (_preHasVpn == hasVpn) {
       ref.read(routeTrackerProvider.notifier).bumpHostEpoch();
+      // Android's NetworkObserver tells the Core about a new network itself.
+      if (system.isDesktop) {
+        debouncer.call(
+          FunctionTag.clearDnsCache,
+          ref.read(coreActionProvider.notifier).clearDnsCacheOnNetworkChange,
+          duration: const Duration(milliseconds: 200),
+        );
+      }
     }
     _preHasVpn = hasVpn;
   }

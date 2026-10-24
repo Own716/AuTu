@@ -1,4 +1,4 @@
-﻿import 'dart:ui' as ui show Image;
+import 'dart:ui' as ui show Image;
 
 import 'package:outo/ui/context.dart';
 import 'package:flutter/rendering.dart';

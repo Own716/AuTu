@@ -1,4 +1,4 @@
-﻿import 'package:outo/common/common.dart';
+import 'package:outo/common/common.dart';
 import 'package:outo/common/ip_quality.dart';
 import 'package:outo/common/service_probe.dart'
     show directOutbound, routedOutbound;

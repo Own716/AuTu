@@ -1,4 +1,4 @@
-﻿import 'package:outo/ui/icons/icons.dart';
+import 'package:outo/ui/icons/icons.dart';
 import 'package:outo/ui/sidebar.dart';
 import 'package:outo/ui/surface.dart';
 import 'package:flutter/gestures.dart';

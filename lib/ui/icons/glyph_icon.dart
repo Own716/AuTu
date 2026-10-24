@@ -1,4 +1,4 @@
-﻿import 'package:outo/ui/icons/glyph.dart';
+import 'package:outo/ui/icons/glyph.dart';
 import 'package:outo/ui/icons/glyph_painter.dart';
 import 'package:material_ui/material_ui.dart';
 

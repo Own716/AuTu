@@ -1,4 +1,4 @@
-﻿import 'package:code_forge/code_forge.dart'
+import 'package:code_forge/code_forge.dart'
     show
         CodeForgeCompletion,
         CodeForgeCompletionRequest,

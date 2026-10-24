@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 
 import 'package:outo/common/constant.dart';
 import 'package:outo/common/service_probe.dart';

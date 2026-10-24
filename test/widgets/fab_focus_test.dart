@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:outo/ui/icons/icons.dart';
 import 'package:outo/widgets/widgets.dart';

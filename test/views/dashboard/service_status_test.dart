@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:outo/common/common.dart';
 import 'package:outo/common/service_probe.dart';

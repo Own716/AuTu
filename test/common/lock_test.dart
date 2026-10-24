@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 
 import 'package:outo/common/lock.dart';
 import 'package:outo/common/path.dart';

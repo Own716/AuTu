@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:outo/ui/context.dart';
 import 'package:outo/ui/item_position.dart';
@@ -242,7 +242,8 @@ Widget generateAnimatedSection({
 }) {
   return Column(
     children: [
-      if (items.isNotEmpty && title != null) ListHeader(title: title),
+      if (items.isNotEmpty)
+        title != null ? ListHeader(title: title) : const ListSectionGap(),
       AnimatedEntries(grouped: true, children: items),
       if (items.isNotEmpty && footer != null) ListFooter(text: footer),
     ],

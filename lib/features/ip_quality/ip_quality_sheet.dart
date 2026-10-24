@@ -1,4 +1,4 @@
-﻿import 'package:outo/common/common.dart';
+import 'package:outo/common/common.dart';
 import 'package:outo/common/ip_quality.dart';
 import 'package:outo/models/models.dart';
 import 'package:outo/providers/config.dart';
@@ -65,7 +65,7 @@ class _HideIpItem extends ConsumerWidget {
     return DecorationListItem(
       title: Text(context.appLocalizations.hideIp),
       onPressed: () => update(!hideIp),
-      trailing: Switch(value: hideIp, onChanged: update),
+      trailing: CommonSwitch(value: hideIp, onChanged: update),
     );
   }
 }
@@ -87,9 +87,10 @@ class _IpQualityDetail extends ConsumerWidget {
     final failed = quality == null && !result.isLoading;
     return ListView(
       shrinkWrap: true,
-      padding: const EdgeInsets.symmetric(
-        horizontal: 16,
-      ).copyWith(bottom: 20, top: context.contentTopPadding),
+      padding: const EdgeInsets.symmetric(horizontal: 16).copyWith(
+        bottom: 20 + context.bottomInset,
+        top: context.contentTopPadding,
+      ),
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(_tipInset, 8, _tipInset, 0),

@@ -1,4 +1,4 @@
-﻿import 'package:outo/common/app_ports.dart';
+import 'package:outo/common/app_ports.dart';
 import 'package:outo/enum/enum.dart';
 import 'package:outo/models/models.dart';
 import 'package:outo/ui/icons/app_glyphs.dart';

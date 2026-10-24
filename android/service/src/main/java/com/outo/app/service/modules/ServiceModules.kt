@@ -1,4 +1,4 @@
-﻿package com.outo.app.service.modules
+package com.outo.app.service.modules
 
 import android.app.Service
 import kotlinx.coroutines.CoroutineScope
@@ -23,7 +23,6 @@ internal class ServiceModules(private val service: Service) {
         val nextScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
         val nextModules = listOf(
             NotificationModule(service, nextScope),
-            NetworkObserveModule(service),
         )
         val startedModules = mutableListOf<ServiceModule>()
 

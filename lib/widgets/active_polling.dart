@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:outo/common/print.dart';
 import 'package:outo/enum/enum.dart';

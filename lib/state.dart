@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:outo/providers/app.dart';
 import 'package:outo/providers/config.dart';
@@ -123,7 +123,7 @@ class GlobalState {
         dialogs.showNotifier(message, level: MessageLevel.error);
       } else {
         unawaited(
-          dialogs.showMessage(
+          dialogs.showAlert(
             title: title ?? currentAppLocalizations.tip,
             message: TextSpan(text: message),
           ),

@@ -1,4 +1,4 @@
-﻿import 'package:outo/common/common.dart';
+import 'package:outo/common/common.dart';
 import 'package:outo/enum/enum.dart';
 import 'package:outo/l10n/l10n.dart';
 import 'package:outo/models/models.dart';
@@ -249,9 +249,10 @@ class _SniffView extends ConsumerWidget {
     return BaseScaffold(
       title: overrideKey.label(appLocalizations),
       body: ListView(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 16,
-        ).copyWith(top: context.contentTopPadding, bottom: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 16).copyWith(
+          top: context.sectionsTopPadding,
+          bottom: 16 + context.bottomInset,
+        ),
         children: [
           generateSection(
             items: [

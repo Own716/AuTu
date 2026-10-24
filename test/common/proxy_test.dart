@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:outo/common/proxy.dart';
 import 'package:outo/models/models.dart' show ProxyState;

@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 
 import 'package:outo/common/system_fonts.dart';
 import 'package:flutter_test/flutter_test.dart';

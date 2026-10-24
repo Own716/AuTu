@@ -1,4 +1,4 @@
-﻿// ignore_for_file: constant_identifier_names
+// ignore_for_file: constant_identifier_names
 
 import 'dart:io';
 import 'dart:math';
@@ -48,16 +48,31 @@ double systemTextScaleOf(BuildContext context) {
   return WidgetsBinding.instance.platformDispatcher.textScaleFactor;
 }
 
-/// How long the Core may spend on one delay test. It spends this twice in the
-/// worst case - once queueing for a slot, once on the probe itself - so the
-/// guard below has to outlast twice this value.
-const delayTestTimeoutDuration = Duration(seconds: 8);
+/// How long, in milliseconds, the Core may spend on one manual delay test. It
+/// spends this twice in the worst case - once queueing for a slot, once on the
+/// probe itself - so the guard below has to outlast twice the longest option.
+const delayTestTimeoutOptions = [500, 1000, 2000, 5000, 8000];
+
+const defaultDelayTestTimeout = 8000;
 
 const delayTestGuardDuration = Duration(seconds: 30);
 
 const delayTimedOutValue = -1;
 
 const probeTimeoutDuration = Duration(seconds: 10);
+
+/// Outlasts the Core's one-second pick poll (`routePollInterval` in
+/// core/route.go), so groups re-picking on neighbouring polls cost one route
+/// check.
+const probeSettleDuration = Duration(milliseconds: 1500);
+
+/// Spans a config load, whose providers, rule sets and url-test picks land
+/// over a few seconds, so an exit moving with each costs one probe more.
+const probeThrottleDuration = Duration(seconds: 5);
+
+/// Covers a start, which moves the route three times within about 150 ms
+/// (`proxied`, then the listeners, then the Android TUN).
+const probeMoveSettleDuration = Duration(milliseconds: 300);
 
 const downloadTimeoutDuration = Duration(seconds: 20);
 
@@ -90,9 +105,6 @@ const ASN = 'ASN.mmdb';
 const GEOIP = 'GEOIP.dat';
 const GEOSITE = 'GEOSITE.dat';
 
-/// The macOS sidebar material is the finished look; the Windows accent
-/// effects need a tint over them to keep the rail readable.
-final double kSidebarBlurOpacity = system.isMacOS ? 0 : 0.5;
 final double kHeaderHeight = getWindowHeaderHeight(
   isDesktop: system.isDesktop,
   isMacOS: system.isMacOS,
@@ -107,6 +119,7 @@ const clashConfigKey = 'clash_config';
 const configKey = 'config';
 const systemDnsRecordKey = 'system_dns_record';
 const bootRecordKey = 'boot_record';
+const appliedConfigMd5Key = 'applied_config_md5';
 const defaultSystemDnsFallback = '223.5.5.5';
 const repository = 'Own716/OuTo';
 const maxMobileWidth = 600;
@@ -161,13 +174,14 @@ const pausedMaxDnsQueriesLength = maxDnsQueriesLength * 2;
 
 const trafficSampleLength = 30;
 
-// Apple's system colors, in the order of the macOS accent colors.
+// iOS 27's system colors but the deeper blue of earlier iOS, in the order of the
+// macOS accent colors.
 const defaultPrimaryColors = [
   defaultPrimaryColor,
-  0xFFAF52DE,
+  0xFFCB30E0,
   0xFFFF2D55,
-  0xFFFF3B30,
-  0xFFFF9500,
+  0xFFFF383C,
+  0xFFFF8D28,
   0xFFFFCC00,
   0xFF34C759,
   0xFF8E8E93,

@@ -1,4 +1,4 @@
-﻿package com.outo.app.plugins
+package com.outo.app.plugins
 
 import android.annotation.SuppressLint
 import android.app.Activity

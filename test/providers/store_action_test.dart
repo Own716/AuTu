@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 
 import 'package:drift/native.dart';
 import 'package:outo/common/common.dart';

@@ -1,4 +1,4 @@
-﻿import 'dart:math';
+import 'dart:math';
 import 'dart:ui' show Size;
 
 import 'package:outo/enum/enum.dart';

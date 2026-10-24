@@ -1,4 +1,4 @@
-﻿package com.outo.app.common
+package com.outo.app.common
 
 import com.google.gson.annotations.SerializedName
 

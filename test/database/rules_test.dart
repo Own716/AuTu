@@ -1,4 +1,4 @@
-﻿import 'package:drift/native.dart';
+import 'package:drift/native.dart';
 import 'package:outo/database/database.dart';
 import 'package:outo/models/models.dart';
 import 'package:flutter_test/flutter_test.dart';

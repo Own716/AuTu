@@ -1,4 +1,4 @@
-﻿import 'package:outo/core/desktop/model.dart';
+import 'package:outo/core/desktop/model.dart';
 import 'package:outo/core/interface.dart';
 import 'package:outo/core/method.dart';
 import 'package:outo/enum/enum.dart';

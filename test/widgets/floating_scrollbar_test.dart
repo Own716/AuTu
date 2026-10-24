@@ -1,4 +1,4 @@
-﻿import 'package:outo/ui/scroll.dart';
+import 'package:outo/ui/scroll.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 

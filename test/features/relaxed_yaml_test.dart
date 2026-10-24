@@ -1,4 +1,4 @@
-﻿import 'package:outo/enum/enum.dart';
+import 'package:outo/enum/enum.dart';
 import 'package:outo/features/editor/clash_schema.dart';
 import 'package:outo/features/editor/relaxed_yaml.dart';
 import 'package:outo/models/models.dart';

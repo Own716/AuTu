@@ -1,4 +1,4 @@
-﻿import 'package:outo/common/constant.dart';
+import 'package:outo/common/constant.dart';
 import 'package:outo/common/exception.dart';
 import 'package:outo/common/network_error.dart';
 import 'package:outo/core/desktop/launch_policy.dart';

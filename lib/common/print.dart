@@ -1,4 +1,4 @@
-﻿import 'package:dio/dio.dart';
+import 'package:dio/dio.dart';
 import 'package:outo/enum/enum.dart';
 import 'package:outo/models/models.dart';
 import 'package:outo/providers/app.dart';

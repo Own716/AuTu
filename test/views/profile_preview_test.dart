@@ -1,4 +1,4 @@
-﻿import 'package:outo/l10n/l10n.dart';
+import 'package:outo/l10n/l10n.dart';
 import 'package:outo/models/profile.dart';
 import 'package:outo/pages/editor.dart';
 import 'package:outo/providers/providers.dart';

@@ -1,4 +1,4 @@
-﻿package com.outo.app.service.models
+package com.outo.app.service.models
 
 import com.outo.app.common.AccessControlMode
 import com.google.gson.JsonParser

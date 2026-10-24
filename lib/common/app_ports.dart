@@ -1,4 +1,4 @@
-﻿import 'dart:ui' show Brightness, Color;
+import 'dart:ui' show Brightness, Color;
 
 import 'package:outo/common/provider_reader.dart';
 import 'package:outo/models/models.dart';
@@ -6,8 +6,9 @@ import 'package:outo/models/models.dart';
 abstract interface class WindowPort {
   Future<WindowProps?> captureNormalGeometry(WindowProps current);
 
-  /// Returns whether a backdrop is now drawn behind the content.
-  Future<bool> setBlur({
+  /// Returns the opacity the sidebar keeps its own color at over the backdrop
+  /// now drawn behind the content, or null when none is drawn.
+  Future<double?> setBlur({
     required bool enabled,
     required Brightness brightness,
     required Color tint,

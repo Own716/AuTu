@@ -1,4 +1,4 @@
-﻿package com.outo.app.service.models
+package com.outo.app.service.models
 
 data class NotificationParams(
     val title: String = "AuTu",

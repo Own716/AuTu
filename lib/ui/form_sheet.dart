@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:outo/ui/dialog.dart';
 import 'package:outo/ui/inherited.dart';

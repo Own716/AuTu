@@ -1,4 +1,4 @@
-﻿import 'dart:math';
+import 'dart:math';
 
 import 'package:outo/common/common.dart';
 import 'package:outo/ui/ui.dart';

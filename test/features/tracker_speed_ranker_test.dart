@@ -1,4 +1,4 @@
-﻿import 'package:outo/features/connection/tracker_speed_ranker.dart';
+import 'package:outo/features/connection/tracker_speed_ranker.dart';
 import 'package:outo/models/models.dart';
 import 'package:flutter_test/flutter_test.dart';
 

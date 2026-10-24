@@ -1,4 +1,4 @@
-﻿package com.outo.app.service
+package com.outo.app.service
 
 import com.outo.app.service.models.NotificationParams
 import com.outo.app.service.models.VpnOptions

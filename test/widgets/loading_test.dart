@@ -1,4 +1,4 @@
-﻿import 'package:outo/ui/loading.dart';
+import 'package:outo/ui/loading.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';

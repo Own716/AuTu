@@ -1,4 +1,4 @@
-﻿package com.outo.app.service
+package com.outo.app.service
 
 import android.database.Cursor
 import android.database.MatrixCursor

@@ -1,4 +1,4 @@
-﻿import 'dart:math' as math;
+import 'dart:math' as math;
 
 import 'package:outo/ui/icons/glyph.dart';
 import 'package:outo/ui/icons/glyph_icon.dart';

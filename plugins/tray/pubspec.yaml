@@ -1,4 +1,4 @@
-﻿name: tray
+name: tray
 description: System tray integration for OuTo on Linux, macOS and Windows.
 version: 0.0.1
 

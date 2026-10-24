@@ -1,4 +1,4 @@
-﻿package com.outo.app.common
+package com.outo.app.common
 
 import java.util.concurrent.atomic.AtomicReference
 

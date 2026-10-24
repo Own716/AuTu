@@ -1,4 +1,4 @@
-﻿import 'package:outo/enum/enum.dart';
+import 'package:outo/enum/enum.dart';
 import 'package:outo/manager/hotkey_manager.dart';
 import 'package:outo/providers/app.dart';
 import 'package:outo/providers/config.dart';

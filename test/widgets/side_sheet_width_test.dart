@@ -1,4 +1,4 @@
-﻿import 'package:outo/providers/app.dart';
+import 'package:outo/providers/app.dart';
 import 'package:outo/ui/paged_sheet.dart';
 import 'package:outo/ui/scaffold.dart';
 import 'package:outo/ui/sheet.dart';

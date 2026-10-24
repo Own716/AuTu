@@ -1,4 +1,4 @@
-﻿import 'package:outo/common/common.dart';
+import 'package:outo/common/common.dart';
 import 'package:outo/enum/enum.dart';
 import 'package:outo/l10n/l10n.dart';
 import 'package:outo/models/models.dart';
@@ -107,9 +107,10 @@ class HotKeyView extends StatelessWidget {
     return BaseScaffold(
       title: appLocalizations.hotkeyManagement,
       body: ListView(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 16,
-        ).copyWith(top: context.contentTopPadding, bottom: 20),
+        padding: const EdgeInsets.symmetric(horizontal: 16).copyWith(
+          top: context.contentTopPadding,
+          bottom: 20 + context.bottomInset,
+        ),
         children: [
           const _HotKeyIntro(),
           for (final (title, actions) in _sections(appLocalizations))

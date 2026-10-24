@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:outo/common/common.dart';
 import 'package:outo/enum/enum.dart';
@@ -93,9 +93,10 @@ class DeveloperView extends ConsumerWidget {
     return BaseScaffold(
       title: appLocalizations.developerMode,
       body: ListView(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 16,
-        ).copyWith(top: context.contentTopPadding, bottom: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 16).copyWith(
+          top: context.sectionsTopPadding,
+          bottom: 16 + context.bottomInset,
+        ),
         children: [
           generateSection(
             items: [

@@ -1,4 +1,4 @@
-﻿package com.outo.app.models
+package com.outo.app.models
 
 data class InstalledPackage(
     val packageName: String,

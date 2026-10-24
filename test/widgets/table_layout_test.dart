@@ -1,4 +1,4 @@
-﻿import 'package:outo/ui/table_layout.dart';
+import 'package:outo/ui/table_layout.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 const _columns = [

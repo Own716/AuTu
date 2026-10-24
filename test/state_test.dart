@@ -1,4 +1,4 @@
-﻿import 'package:outo/common/constant.dart';
+import 'package:outo/common/constant.dart';
 import 'package:outo/providers/providers.dart';
 import 'package:outo/ui/color.dart';
 import 'package:material_ui/material_ui.dart';

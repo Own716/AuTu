@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:outo/ui/color.dart';
 import 'package:outo/ui/context.dart';

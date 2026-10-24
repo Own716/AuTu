@@ -1,4 +1,4 @@
-﻿/*
+/*
 Adapted from navigator_resizable 3.1.0,
 https://github.com/fujidaiti/navigator_resizable
 

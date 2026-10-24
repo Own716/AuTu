@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:outo/common/common.dart';
 import 'package:outo/pages/editor.dart';
@@ -48,7 +48,8 @@ Future<void> showCustomQuickEdit(
     content: content,
     readOnly: false,
     schema: schema,
-    onPop: (_, _, next) async {
+    onPop: (_, _, edited) async {
+      final next = await edited.readText();
       if (next == content) {
         return true;
       }

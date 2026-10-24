@@ -1,4 +1,4 @@
-﻿import 'dart:typed_data';
+import 'dart:typed_data';
 
 import 'package:outo/ui/icons/icons.dart';
 import 'package:outo/ui/liquid_glass.dart';

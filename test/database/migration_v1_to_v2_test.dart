@@ -1,4 +1,4 @@
-﻿import 'package:drift/native.dart';
+import 'package:drift/native.dart';
 import 'package:outo/database/database.dart' as fl;
 import 'package:outo/enum/enum.dart';
 import 'package:outo/models/models.dart';

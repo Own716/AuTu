@@ -1,4 +1,4 @@
-﻿@TestOn('!windows')
+@TestOn('!windows')
 library;
 
 import 'dart:async';

@@ -1,4 +1,4 @@
-﻿import 'package:outo/common/yaml_writer.dart';
+import 'package:outo/common/yaml_writer.dart';
 import 'package:yaml/yaml.dart';
 
 class Yaml {

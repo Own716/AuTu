@@ -1,4 +1,4 @@
-﻿import 'package:outo/common/common.dart';
+import 'package:outo/common/common.dart';
 import 'package:outo/features/form/form.dart';
 import 'package:outo/models/models.dart';
 import 'package:outo/providers/providers.dart';
@@ -98,7 +98,12 @@ class CustomProxyDialersView extends ConsumerWidget {
         isSearching: false,
         nullStatus: NullStatus(label: appLocalizations.appProxiesEmpty),
         child: ListView.builder(
-          padding: EdgeInsets.fromLTRB(16, context.contentTopPadding, 16, 24),
+          padding: EdgeInsets.fromLTRB(
+            16,
+            context.contentTopPadding,
+            16,
+            24 + context.bottomInset,
+          ),
           itemCount: proxies?.length ?? 0,
           itemBuilder: (_, index) {
             final proxy = proxies![index];

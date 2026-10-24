@@ -1,4 +1,4 @@
-﻿import 'package:outo/enum/enum.dart';
+import 'package:outo/enum/enum.dart';
 import 'package:outo/providers/providers.dart';
 import 'package:outo/state.dart';
 import 'package:outo/ui/icons/icons.dart';

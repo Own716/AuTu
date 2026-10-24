@@ -1,4 +1,4 @@
-﻿import 'package:outo/ui/inherited.dart';
+import 'package:outo/ui/inherited.dart';
 import 'package:outo/ui/navigator.dart';
 import 'package:outo/ui/open_container.dart';
 import 'package:outo/ui/paged_sheet.dart';

@@ -1,4 +1,4 @@
-﻿import 'dart:math' as math;
+import 'dart:math' as math;
 import 'dart:ui' show lerpDouble;
 
 import 'package:outo/ui/icons/glyph.dart';
@@ -408,6 +408,18 @@ abstract final class AppGlyphs {
     ], role: GlyphRole.line),
   ]);
 
+  static const clearField = Glyph([
+    GlyphCircle(12, 12, 8.8),
+    GlyphPolyline([
+      GlyphVertex(9.3, 9.3),
+      GlyphVertex(14.7, 14.7),
+    ], role: GlyphRole.detail),
+    GlyphPolyline([
+      GlyphVertex(14.7, 9.3),
+      GlyphVertex(9.3, 14.7),
+    ], role: GlyphRole.detail),
+  ]);
+
   static const check = Glyph([
     GlyphPolyline([
       GlyphVertex(4.8, 12.5),
@@ -478,9 +490,9 @@ abstract final class AppGlyphs {
   ]);
 
   static const more = Glyph([
-    GlyphCircle(12, 5.5, 1.4, role: GlyphRole.line, solid: true),
-    GlyphCircle(12, 12, 1.4, role: GlyphRole.line, solid: true),
-    GlyphCircle(12, 18.5, 1.4, role: GlyphRole.line, solid: true),
+    GlyphCircle(12, 4.2, 1.65, role: GlyphRole.line, solid: true),
+    GlyphCircle(12, 12, 1.65, role: GlyphRole.line, solid: true),
+    GlyphCircle(12, 19.8, 1.65, role: GlyphRole.line, solid: true),
   ]);
 
   static const moreCircle = Glyph([
@@ -1077,6 +1089,11 @@ abstract final class AppGlyphs {
   static const toggle = Glyph([
     GlyphBox(2.9, 6.5, 21.1, 17.5, 5.5),
     GlyphCircle(8.4, 12, 2.8, role: GlyphRole.detail, solid: true),
+  ]);
+
+  static const toggleOn = Glyph([
+    GlyphBox(2.9, 6.5, 21.1, 17.5, 5.5),
+    GlyphCircle(15.6, 12, 2.8, role: GlyphRole.detail, solid: true),
   ]);
 
   static const pin = Glyph([

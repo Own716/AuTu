@@ -1,4 +1,4 @@
-﻿import 'package:outo/features/form/form.dart';
+import 'package:outo/features/form/form.dart';
 import 'package:outo/l10n/l10n.dart';
 import 'package:outo/providers/app.dart';
 import 'package:outo/ui/icons/icons.dart';

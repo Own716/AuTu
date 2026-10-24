@@ -1,4 +1,4 @@
-﻿import 'package:outo/common/tray.dart';
+import 'package:outo/common/tray.dart';
 import 'package:outo/enum/enum.dart';
 import 'package:outo/l10n/l10n.dart';
 import 'package:outo/models/models.dart';

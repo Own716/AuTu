@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:outo/ui/inherited.dart';
 import 'package:outo/ui/keyboard_inset_hold.dart';

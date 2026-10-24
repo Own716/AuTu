@@ -1,4 +1,4 @@
-﻿import 'package:outo/manager/app_manager.dart';
+import 'package:outo/manager/app_manager.dart';
 import 'package:outo/providers/app.dart';
 import 'package:outo/state.dart';
 import 'package:material_ui/material_ui.dart';

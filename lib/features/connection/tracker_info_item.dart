@@ -1,4 +1,4 @@
-﻿import 'package:outo/common/common.dart';
+import 'package:outo/common/common.dart';
 import 'package:outo/enum/enum.dart';
 import 'package:outo/models/models.dart';
 import 'package:outo/providers/config.dart';
@@ -254,9 +254,10 @@ class TrackerInfoDetailView extends StatelessWidget {
     final appLocalizations = context.appLocalizations;
     final metadata = trackerInfo.metadata;
     return ListView(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 16,
-      ).copyWith(bottom: 20, top: context.contentTopPadding),
+      padding: const EdgeInsets.symmetric(horizontal: 16).copyWith(
+        bottom: 20 + context.bottomInset,
+        top: context.sectionsTopPadding,
+      ),
       children: [
         generateSection(
           title: appLocalizations.basicInfo,

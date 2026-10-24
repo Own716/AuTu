@@ -1,4 +1,4 @@
-﻿import 'package:outo/common/common.dart';
+import 'package:outo/common/common.dart';
 import 'package:outo/models/models.dart';
 import 'package:outo/ui/ui.dart';
 import 'package:material_ui/material_ui.dart';
@@ -125,7 +125,6 @@ class SubscriptionInfoDetailView extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 12),
           generateSection(
             title: appLocalizations.expireTime,
             items: [_buildItem(value: expire)],

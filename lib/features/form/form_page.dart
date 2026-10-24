@@ -1,4 +1,4 @@
-﻿import 'package:outo/common/common.dart';
+import 'package:outo/common/common.dart';
 import 'package:outo/ui/icons/icons.dart';
 import 'package:outo/ui/ui.dart';
 import 'package:material_ui/material_ui.dart';
@@ -40,9 +40,10 @@ class FormPage extends StatelessWidget {
       ),
       body: ListView(
         shrinkWrap: true,
-        padding: const EdgeInsets.symmetric(
-          horizontal: 16,
-        ).copyWith(top: context.contentTopPadding, bottom: 20),
+        padding: const EdgeInsets.symmetric(horizontal: 16).copyWith(
+          top: context.sectionsTopPadding,
+          bottom: 20 + context.bottomInset,
+        ),
         children: [
           ErrorBanner(message: error),
           ...children,

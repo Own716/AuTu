@@ -1,4 +1,4 @@
-﻿import 'package:outo/common/system_dns.dart';
+import 'package:outo/common/system_dns.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class _FakePort implements SystemDnsPort {

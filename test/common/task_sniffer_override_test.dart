@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 
 import 'package:outo/common/common.dart';
 import 'package:outo/enum/enum.dart';

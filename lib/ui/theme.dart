@@ -1,4 +1,4 @@
-﻿import 'package:outo/ui/color.dart';
+import 'package:outo/ui/color.dart';
 import 'package:outo/ui/metrics.dart';
 import 'package:outo/ui/typography.dart';
 import 'package:material_ui/material_ui.dart';

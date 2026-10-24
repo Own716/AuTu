@@ -1,4 +1,4 @@
-﻿import 'dart:math';
+import 'dart:math';
 
 import 'package:outo/ui/metrics.dart';
 import 'package:outo/ui/typography.dart';

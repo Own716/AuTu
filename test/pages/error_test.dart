@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 
 import 'package:outo/common/app_localizations.dart';
 import 'package:outo/l10n/l10n.dart';

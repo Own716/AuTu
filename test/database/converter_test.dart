@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 
 import 'package:outo/database/database.dart';
 import 'package:outo/models/models.dart';

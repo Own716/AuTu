@@ -1,8 +1,7 @@
-﻿import 'dart:io';
+import 'dart:io';
 
 import 'package:outo/common/common.dart';
 import 'package:outo/enum/enum.dart';
-import 'package:outo/features/form/form.dart';
 import 'package:outo/models/models.dart';
 import 'package:outo/providers/config.dart';
 import 'package:outo/views/config/override.dart';
@@ -409,35 +408,11 @@ class TunSection extends ConsumerWidget {
         footer: appLocalizations.bypassPrivateRouteDesc,
       );
     }
-    final spec = appTunOverrideSpec(isLinux: isLinux, isWindows: isWindows);
-    final picked = ref.watch(
-      patchClashConfigProvider.select((state) => state.tunOverrideKeys),
-    );
-    final listed = [
-      for (final key in spec.values)
-        if (picked.contains(key)) key,
-    ];
-    void handleAdd() => showOverrideAddSheet(context, ref, spec);
-    return generateAnimatedSection(
+    return OverrideSection(
       title: appLocalizations.tun,
-      items: [
-        const BypassPrivateRouteItem(key: ValueKey(#bypassPrivateRoute)),
-        for (final key in listed)
-          OverrideEntry(key: ValueKey(key), spec: spec, overrideKey: key),
-        if (listed.length < spec.values.length)
-          FormRow(
-            key: const ValueKey(#add),
-            leading: EntryButton.add(onPressed: handleAdd),
-            title: spec.target.addEntry(appLocalizations),
-            titleStyle: TextStyle(color: context.colorScheme.primary),
-            onPressed: handleAdd,
-          ),
-      ],
-      footer: [
-        appLocalizations.bypassPrivateRouteDesc,
-        appLocalizations.tunOverrideDesc,
-        ?spec.footerOf(listed, appLocalizations),
-      ].join('\n'),
+      spec: appTunOverrideSpec(isLinux: isLinux, isWindows: isWindows),
+      items: const [BypassPrivateRouteItem(key: ValueKey(#bypassPrivateRoute))],
+      footer: [appLocalizations.bypassPrivateRouteDesc],
     );
   }
 }
@@ -586,9 +561,10 @@ class NetworkListView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 16,
-      ).copyWith(top: context.contentTopPadding, bottom: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 16).copyWith(
+        top: context.sectionsTopPadding,
+        bottom: 16 + context.bottomInset,
+      ),
       children: [
         if (system.isAndroid) const VpnSections(),
         if (system.isDesktop) const SystemProxySection(),

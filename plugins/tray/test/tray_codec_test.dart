@@ -1,4 +1,4 @@
-﻿import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:tray/src/tray_codec.dart';
 import 'package:tray/tray.dart';
 

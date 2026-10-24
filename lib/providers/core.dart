@@ -1,4 +1,4 @@
-﻿import 'package:outo/core/controller.dart';
+import 'package:outo/core/controller.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'generated/core.g.dart';

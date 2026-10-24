@@ -1,4 +1,4 @@
-﻿import 'package:outo/common/common.dart';
+import 'package:outo/common/common.dart';
 import 'package:outo/state.dart';
 import 'package:outo/ui/icons/icons.dart';
 import 'package:outo/widgets/widgets.dart';
@@ -16,7 +16,7 @@ class InfoMessageButton extends StatelessWidget {
       child: IconButton(
         tooltip: context.appLocalizations.tip,
         onPressed: () {
-          dialogs.showMessage(message: TextSpan(text: message));
+          dialogs.showAlert(message: TextSpan(text: message));
         },
         icon: GlyphIcon(
           AppGlyphs.info,

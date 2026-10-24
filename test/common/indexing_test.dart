@@ -1,4 +1,4 @@
-﻿import 'package:outo/common/indexing.dart';
+import 'package:outo/common/indexing.dart';
 import 'package:test/test.dart';
 
 void main() {

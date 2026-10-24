@@ -1,4 +1,4 @@
-﻿import 'package:outo/common/common.dart';
+import 'package:outo/common/common.dart';
 import 'package:outo/enum/enum.dart';
 import 'package:outo/features/form/form.dart';
 import 'package:outo/models/clash_config.dart';
@@ -476,7 +476,7 @@ class _AddOrEditRuleViewState extends ConsumerState<_AddOrEditRuleView> {
     // The core turns no-resolve on with src, so the switch cannot disagree.
     return _buildItem(
       title: appLocalizations.noResolveHostname,
-      trailing: Switch(
+      trailing: CommonSwitch(
         value: noResolve || src,
         onChanged: src
             ? null
@@ -493,7 +493,7 @@ class _AddOrEditRuleViewState extends ConsumerState<_AddOrEditRuleView> {
     final appLocalizations = context.appLocalizations;
     return _buildItem(
       title: appLocalizations.matchSourceIp,
-      trailing: Switch(
+      trailing: CommonSwitch(
         value: src,
         onChanged: (value) {
           ref
@@ -538,9 +538,10 @@ class _AddOrEditRuleViewState extends ConsumerState<_AddOrEditRuleView> {
       confirmationAction: customSaveAction(context, onPressed: _handleSave),
       body: ListView(
         shrinkWrap: true,
-        padding: const EdgeInsets.symmetric(
-          horizontal: 16,
-        ).copyWith(bottom: 20, top: context.contentTopPadding),
+        padding: const EdgeInsets.symmetric(horizontal: 16).copyWith(
+          bottom: 20 + context.bottomInset,
+          top: context.sectionsTopPadding,
+        ),
         children: [
           generateSection(
             title: appLocalizations.basicInfo,

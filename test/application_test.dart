@@ -1,4 +1,4 @@
-﻿import 'package:outo/application.dart';
+import 'package:outo/application.dart';
 import 'package:outo/manager/hotkey_manager.dart';
 import 'package:outo/manager/manager.dart';
 import 'package:material_ui/material_ui.dart';

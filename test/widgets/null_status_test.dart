@@ -1,4 +1,4 @@
-﻿import 'package:outo/common/app_localizations.dart';
+import 'package:outo/common/app_localizations.dart';
 import 'package:outo/l10n/l10n.dart';
 import 'package:outo/providers/app.dart';
 import 'package:outo/ui/null_status.dart';

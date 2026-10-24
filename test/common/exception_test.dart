@@ -1,4 +1,4 @@
-﻿import 'package:outo/common/exception.dart';
+import 'package:outo/common/exception.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

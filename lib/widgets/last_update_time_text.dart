@@ -1,4 +1,4 @@
-﻿import 'package:outo/common/common.dart';
+import 'package:outo/common/common.dart';
 import 'package:material_ui/material_ui.dart';
 
 import 'active_polling.dart';

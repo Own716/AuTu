@@ -1,4 +1,4 @@
-﻿import 'package:outo/widgets/widgets.dart';
+import 'package:outo/widgets/widgets.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';

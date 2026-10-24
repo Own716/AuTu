@@ -1,4 +1,4 @@
-﻿import 'package:outo/common/cidr.dart';
+import 'package:outo/common/cidr.dart';
 import 'package:outo/models/models.dart';
 import 'package:flutter_test/flutter_test.dart';
 

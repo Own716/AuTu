@@ -1,4 +1,4 @@
-﻿import 'package:outo/providers/action.dart';
+import 'package:outo/providers/action.dart';
 import 'package:outo/providers/app.dart';
 import 'package:outo/providers/config.dart';
 import 'package:outo/state.dart';

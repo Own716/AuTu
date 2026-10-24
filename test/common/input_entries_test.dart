@@ -1,4 +1,4 @@
-﻿import 'package:outo/common/input_entries.dart';
+import 'package:outo/common/input_entries.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

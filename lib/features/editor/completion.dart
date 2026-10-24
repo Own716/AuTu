@@ -1,4 +1,4 @@
-﻿import 'package:code_forge/code_forge.dart' show CodeForgeCompletionSource;
+import 'package:code_forge/code_forge.dart' show CodeForgeCompletionSource;
 import 'package:outo/enum/enum.dart';
 
 import 'clash_completion.dart';

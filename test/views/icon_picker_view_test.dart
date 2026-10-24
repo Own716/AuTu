@@ -1,4 +1,4 @@
-﻿import 'package:drift/native.dart';
+import 'package:drift/native.dart';
 import 'package:outo/database/database.dart' hide IconSets;
 import 'package:outo/models/models.dart';
 import 'package:outo/providers/providers.dart';

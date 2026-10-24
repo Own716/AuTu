@@ -1,4 +1,4 @@
-﻿import 'dart:ui' as ui;
+import 'dart:ui' as ui;
 
 import 'package:outo/features/form/form.dart';
 import 'package:outo/models/common.dart';

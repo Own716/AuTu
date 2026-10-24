@@ -1,4 +1,4 @@
-﻿package com.outo.app
+package com.outo.app
 
 import android.Manifest
 import android.content.pm.PackageManager

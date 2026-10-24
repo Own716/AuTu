@@ -1,4 +1,4 @@
-﻿export 'active_polling.dart';
+export 'active_polling.dart';
 export 'chip_title.dart';
 export 'config_item.dart';
 export 'icon.dart';

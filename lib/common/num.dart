@@ -1,4 +1,4 @@
-﻿import 'package:outo/enum/enum.dart';
+import 'package:outo/enum/enum.dart';
 import 'package:outo/models/common.dart';
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart' show NumberFormat;

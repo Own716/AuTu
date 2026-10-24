@@ -1,4 +1,4 @@
-﻿import 'dart:ffi';
+import 'dart:ffi';
 import 'dart:io';
 import 'dart:isolate';
 

@@ -1,4 +1,4 @@
-﻿import 'package:outo/common/protocol.dart';
+import 'package:outo/common/protocol.dart';
 import 'package:test/test.dart';
 
 void main() {

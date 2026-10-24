@@ -1,4 +1,4 @@
-﻿import 'package:outo/common/common.dart';
+import 'package:outo/common/common.dart';
 import 'package:outo/enum/enum.dart';
 import 'package:outo/features/features.dart';
 import 'package:outo/models/models.dart';
@@ -109,7 +109,7 @@ class _RequestsViewState extends ConsumerState<RequestsView>
                       controller: _scrollController,
                       padding: EdgeInsets.only(
                         top: context.contentTopPadding,
-                        bottom: 16 + BottomInsetScope.of(context),
+                        bottom: 16 + context.bottomInset,
                       ),
                       trackerInfos: requests,
                       table: table,

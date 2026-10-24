@@ -1,4 +1,4 @@
-﻿import 'package:outo/features/form/rule_preset.dart';
+import 'package:outo/features/form/rule_preset.dart';
 import 'package:outo/l10n/l10n.dart';
 import 'package:outo/models/clash_config.dart';
 import 'package:outo/providers/app.dart';

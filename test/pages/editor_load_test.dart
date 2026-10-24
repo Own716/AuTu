@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:code_forge/code_forge.dart';
 import 'package:outo/enum/enum.dart';
