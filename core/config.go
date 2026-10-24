@@ -11,6 +11,7 @@ import (
 
 	"github.com/metacubex/mihomo/adapter"
 	"github.com/metacubex/mihomo/adapter/inbound"
+	"github.com/metacubex/mihomo/adapter/provider"
 	"github.com/metacubex/mihomo/component/age"
 	"github.com/metacubex/mihomo/component/auth"
 	"github.com/metacubex/mihomo/component/dialer"
@@ -71,6 +72,29 @@ func handleGetConfig(path string) (*config.RawConfig, error) {
 	return unmarshalRawConfig(buf)
 }
 
+func handleGetProxyDefinition(name string) (map[string]any, error) {
+	raw, err := handleGetConfig(runningConfigPath())
+	if err != nil {
+		return nil, err
+	}
+	if proxy := lookupProxy(name); proxy != nil {
+		if pdName := proxy.ProxyInfo().ProviderName; pdName != "" {
+			pd, running := tunnel.ProvidersSnapshot()[pdName]
+			mapping, declared := raw.ProxyProvider[pdName]
+			if !running || !declared {
+				return nil, nil
+			}
+			return provider.ProxyMapping(pd, mapping, name)
+		}
+	}
+	for _, mapping := range raw.Proxy {
+		if mapping["name"] == name {
+			return mapping, nil
+		}
+	}
+	return nil, nil
+}
+
 func handleValidateConfig(path string) error {
 	_, err := handleGetConfig(path)
 	return err
@@ -112,8 +136,12 @@ func withPlatformLimits(cfg *config.Config) *config.Config {
 	return cfg
 }
 
+func runningConfigPath() string {
+	return filepath.Join(constant.Path.HomeDir(), "config.yaml")
+}
+
 func loadSetupConfig(params *SetupParams) (*config.Config, error) {
-	path := filepath.Join(constant.Path.HomeDir(), "config.yaml")
+	path := runningConfigPath()
 	if params.Base != nil {
 		return loadConfigWithBase(params.Base, path)
 	}
@@ -181,10 +209,11 @@ func updateConfig(params *UpdateParams) error {
 		general.UnifiedDelay = *params.UnifiedDelay
 		adapter.UnifiedDelay.Store(general.UnifiedDelay)
 	}
-	// IPv6 belongs with mode: turning it on moves a direct dial to another exit address.
-	routeChanged := false
+	routeChange := routeUnchanged
 	if params.Mode != nil {
-		routeChanged = routeChanged || general.Mode != *params.Mode
+		if general.Mode != *params.Mode {
+			routeChange = routeMoved
+		}
 		general.Mode = *params.Mode
 		tunnel.SetMode(general.Mode)
 	}
@@ -192,8 +221,12 @@ func updateConfig(params *UpdateParams) error {
 		general.LogLevel = *params.LogLevel
 		log.SetLevel(general.LogLevel)
 	}
+	// Turning IPv6 on moves a direct dial to another exit address while the
+	// route it takes stays the same.
 	if params.IPv6 != nil {
-		routeChanged = routeChanged || general.IPv6 != *params.IPv6
+		if general.IPv6 != *params.IPv6 {
+			routeChange = routeReset
+		}
 		general.IPv6 = *params.IPv6
 		resolver.DisableIPv6 = !general.IPv6
 	}
@@ -213,8 +246,8 @@ func updateConfig(params *UpdateParams) error {
 		setGeoResourceUrl(geoType, link)
 	}
 	syncGeoUpdater(params.GeoAutoUpdate, params.GeoUpdateInterval)
-	if routeChanged {
-		bumpRouteEpoch()
+	if routeChange != routeUnchanged {
+		changeRoute(routeChange)
 	}
 	return nil
 }

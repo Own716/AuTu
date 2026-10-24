@@ -192,6 +192,7 @@ var methodHandlers = map[CoreMethod]methodHandler{
 	getConfigMethod:                withFallible(handleGetConfig),
 	getProfileBaseMethod:           withFallible(handleGetProfileBase),
 	getProfileOutboundsMethod:      withFallible(handleGetProfileOutbounds),
+	getProxyDefinitionMethod:       withFallible(handleGetProxyDefinition),
 	buildProfileMethod:             withFallible(handleBuildProfile),
 	setupConfigMethod:              withMessage(handleSetupConfig),
 	updateConfigMethod:             withMessage(updateConfig),
@@ -204,6 +205,8 @@ var methodHandlers = map[CoreMethod]methodHandler{
 	changeProxyMethod:              withArguments(handleChangeProxy),
 	asyncTestDelayMethod:           withArguments(handleTestDelay),
 	watchRouteMethod:               watchRouteHandler,
+	checkRoutesMethod:              withArguments(handleCheckRoutes),
+	speedTestMethod:                withArguments(handleSpeedTest),
 	probeMethod:                    withArguments(handleProbe),
 	outboundIpMethod:               withArguments(handleOutboundIp),
 	serviceCheckMethod:             withArguments(handleServiceCheck),
@@ -214,6 +217,7 @@ var methodHandlers = map[CoreMethod]methodHandler{
 	getConnectionCountMethod:       withoutArguments(handleGetConnectionCount),
 	closeConnectionsMethod:         withoutArguments(handleCloseConnections),
 	resetConnectionsMethod:         withoutArguments(handleResetConnections),
+	clearDnsCacheMethod:            acknowledged(handleClearDnsCache),
 	closeConnectionMethod:          withArguments(handleCloseConnection),
 	getExternalProvidersMethod:     withoutArguments(handleGetExternalProviders),
 	getExternalProviderMethod:      withArguments(handleGetExternalProvider),
@@ -223,7 +227,6 @@ var methodHandlers = map[CoreMethod]methodHandler{
 	dumpRuleSetMethod:              withFallible(handleDumpRuleSet),
 	compileRuleSetMethod:           withFallible(handleCompileRuleSet),
 	clearEffectMethod:              withMessage(handleClearEffect),
-	speedTestMethod:                withArguments(handleSpeedTest),
 }
 
 func watchRouteHandler(call *MethodCall) (any, error) {
