@@ -523,11 +523,6 @@ abstract class CoreHandlerInterface with CoreInterface {
   }
 
   @override
-  Future<bool> clearDnsCache() async {
-    return await _invokeMethod<bool>(method: CoreMethod.clearDnsCache) ?? false;
-  }
-
-  @override
   Future<bool> closeConnection(String id) async {
     return await _invokeMethod<bool>(
           method: CoreMethod.closeConnection,
