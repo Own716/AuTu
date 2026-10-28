@@ -81,7 +81,7 @@ suspend fun Service.createBettboxNotificationBuilder(
             if (largeIconBitmap != null) {
                 setLargeIcon(largeIconBitmap)
             }
-            setContentTitle("Bettbox")
+            setContentTitle("AuTu")
             setContentIntent(pendingIntent)
             setCategory(NotificationCompat.CATEGORY_SERVICE)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -113,9 +113,9 @@ fun Service.ensureNotificationChannel(
             else -> NotificationManager.IMPORTANCE_LOW
         }
         val name = when {
-            isSuspended -> "Bettbox Suspended Service"
-            isHighPriority -> "Bettbox High Priority Service"
-            else -> "Bettbox Service"
+            isSuspended -> "AuTu Suspended Service"
+            isHighPriority -> "AuTu High Priority Service"
+            else -> "AuTu Service"
         }
         val newChannel = NotificationChannel(channelId, name, importance).apply {
             setShowBadge(false)

@@ -821,7 +821,7 @@ data object VpnPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
             startForeground()
         }
         scope.launch(Dispatchers.Main) {
-            Toast.makeText(BettboxApplication.getAppContext(), "Bettbox Suspended", Toast.LENGTH_SHORT).show()
+            Toast.makeText(BettboxApplication.getAppContext(), "AuTu Suspended", Toast.LENGTH_SHORT).show()
         }
         ServicePlugin.notifyNetworkChanged()
     }
@@ -849,7 +849,7 @@ data object VpnPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
             (bettBoxService as? BettboxVpnService)?.resetNotificationBuilder()
             performStartCore(options, retry = false, notifyOnFailure = false)
             withContext(Dispatchers.Main) {
-                Toast.makeText(BettboxApplication.getAppContext(), "Bettbox Connected", Toast.LENGTH_SHORT).show()
+                Toast.makeText(BettboxApplication.getAppContext(), "AuTu Connected", Toast.LENGTH_SHORT).show()
             }
             ServicePlugin.notifyNetworkChanged()
         }

@@ -31,7 +31,7 @@
         android:name=".BettboxApplication"
         android:hardwareAccelerated="true"
         android:icon="@mipmap/ic_launcher_light"
-        android:roundIcon="@mipmap/ic_launcher_round_light"
+        android:roundIcon="@mipmap/ic_launcher_light_round"
         android:label="AuTu"
         android:banner="@drawable/tv_banner"
         android:networkSecurityConfig="@xml/network_security_config"
@@ -39,7 +39,7 @@
         <activity
             android:name="com.outo.app.MainActivity"
             android:icon="@mipmap/ic_launcher_light"
-            android:roundIcon="@mipmap/ic_launcher_round_light"
+            android:roundIcon="@mipmap/ic_launcher_light_round"
             android:alwaysRetainTaskState="true"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode|colorMode"
             android:exported="true"
@@ -82,7 +82,7 @@
             android:enabled="false"
             android:exported="true"
             android:icon="@mipmap/ic_launcher_light"
-            android:roundIcon="@mipmap/ic_launcher_round_light"
+            android:roundIcon="@mipmap/ic_launcher_light_round"
             android:targetActivity="com.outo.app.MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
