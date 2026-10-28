@@ -1,98 +1,76 @@
 package com.outo.app.core
 
-import com.outo.app.core.mobile.Mobile
-import com.outo.app.core.mobile.ResultHandler
-import com.outo.app.core.mobile.TunHandler
-import java.net.InetAddress
+import android.util.Log
 import java.net.InetSocketAddress
-import java.net.URI
 
 object Core {
-    fun forceGC() = Mobile.forceGC()
 
-    fun updateDNS(
-        dns: String,
-    ) = Mobile.updateDns(dns)
+    private external fun startTun(fd: Int, cb: TunInterface)
+    private external fun suspend(suspended: Int)
+    external fun stopTun()
 
-    fun resetNetwork() = Mobile.resetNetwork()
+    init {
+        System.loadLibrary("core")
+    }
 
     private fun parseInetSocketAddress(address: String): InetSocketAddress {
-        val uri = URI("tcp://$address")
-        val host = requireNotNull(uri.host) { "Missing host in address: $address" }
-        require(uri.port >= 0) { "Missing port in address: $address" }
-        return InetSocketAddress(InetAddress.getByName(host), uri.port)
+        val lastColonIndex = address.lastIndexOf(':')
+        if (lastColonIndex == -1) {
+            return InetSocketAddress(address, 0)
+        }
+
+        val host = address.substring(0, lastColonIndex).removeSurrounding("[", "]")
+        val port = address.substring(lastColonIndex + 1).toIntOrNull() ?: 0
+
+        return InetSocketAddress(host, port)
     }
 
     fun startTun(
         fd: Int,
         protect: (Int) -> Boolean,
-        resolveUid: (protocol: Int, source: InetSocketAddress, target: InetSocketAddress) -> Int,
-        resolvePackage: (uid: Int) -> String,
-        stack: String,
-        address: String,
-        dns: String,
-        options: String,
-    ): Boolean {
-        return Mobile.startTun(
-            fd,
-            object : TunHandler {
-                override fun protect(fd: Int): Boolean = protect(fd)
-
-                override fun resolveUid(
-                    protocol: Int,
-                    source: String,
-                    target: String,
-                ): Int {
-                    return resolveUid(
-                        protocol,
-                        parseInetSocketAddress(source),
-                        parseInetSocketAddress(target),
-                    )
-                }
-
-                override fun resolvePackage(uid: Int): String = resolvePackage(uid)
-            },
-            stack,
-            address,
-            dns,
-            options,
-        )
-    }
-
-    fun invokeMethod(
-        data: String,
-        cb: (result: ByteArray?) -> Unit,
+        resolverProcess: (protocol: Int, source: InetSocketAddress, target: InetSocketAddress, uid: Int) -> String
     ) {
-        Mobile.invokeMethod(data, ResultHandler { result -> cb(result) })
+        startTun(fd, object : TunInterface {
+            override fun protect(fd: Int) {
+                runCatching { protect(fd) }
+                    .onFailure { Log.e("Core", "protect JNI callback error: ${it.message}") }
+            }
+
+            override fun resolverProcess(
+                protocol: Int,
+                source: String,
+                target: String,
+                uid: Int
+            ): String = runCatching {
+                resolverProcess(
+                    protocol,
+                    parseInetSocketAddress(source),
+                    parseInetSocketAddress(target),
+                    uid
+                )
+            }.onFailure {
+                Log.e("Core", "resolverProcess JNI callback error: ${it.message}")
+            }.getOrDefault("")
+        })
     }
 
-    fun updateEventListener(
-        callback: ((result: ByteArray) -> Unit)?,
-    ) {
-        Mobile.setEventListener(
-            callback?.let { ResultHandler { result -> it(result ?: ByteArray(0)) } },
-        )
+    fun suspended(value: Boolean) {
+        runCatching {
+            Log.d("Core", "suspended called with value: $value")
+            suspend(if (value) 1 else 0)
+            Log.d("Core", "suspend JNI call completed")
+        }.onFailure {
+            Log.e("Core", "Error calling suspend: ${it.message}", it)
+        }
     }
 
-    fun quickSetup(
-        initParamsString: String,
-        setupParamsString: String,
-        callback: (result: String?) -> Unit,
-    ) {
-        Mobile.quickSetup(
-            initParamsString,
-            setupParamsString,
-            ResultHandler { result -> callback(result?.decodeToString()) },
-        )
+    fun dozeSuspend(value: Boolean) {
+        runCatching {
+            Log.d("Core", "dozeSuspend called with value: $value")
+            suspend(if (value) 2 else 0)
+            Log.d("Core", "dozeSuspend JNI call completed")
+        }.onFailure {
+            Log.e("Core", "Error calling dozeSuspend: ${it.message}", it)
+        }
     }
-
-    fun stopTun() = Mobile.stopTun()
-
-    fun startListener() = Mobile.startListener()
-
-    fun stopListener() = Mobile.stopListener()
-
-    fun getTraffic(onlyStatisticsProxy: Boolean): String = Mobile.getTraffic(onlyStatisticsProxy)
-
-    fun getTotalTraffic(onlyStatisticsProxy: Boolean): String = Mobile.getTotalTraffic(onlyStatisticsProxy)
 }

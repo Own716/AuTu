@@ -1,50 +1,55 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:outo/common/common.dart';
-import 'package:flutter/foundation.dart';
+import 'package:bett_box/common/common.dart';
+
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 
 class AppPath {
   static AppPath? _instance;
-  late ResolveOnce<Directory> _dataDir;
-  late ResolveOnce<Directory?> _downloadDir;
-  late ResolveOnce<Directory> _tempDir;
-  Completer<Directory> cacheDir = Completer();
+  Completer<Directory> dataDir = Completer();
+  Completer<Directory> downloadDir = Completer();
+  Completer<Directory> tempDir = Completer();
+  late String appDirPath;
+  late final bool isPortable;
 
-  @visibleForTesting
-  static Future<Directory> Function() supportDirectory =
-      getApplicationSupportDirectory;
-
-  @visibleForTesting
-  static Future<Directory> Function() temporaryDirectory =
-      getTemporaryDirectory;
-
-  @visibleForTesting
-  static Future<Directory> Function() cacheDirectory =
-      getApplicationCacheDirectory;
-
-  @visibleForTesting
-  static Future<Directory?> Function() downloadDirectory =
-      getDownloadsDirectory;
+  String? _resolvedDataDirPath;
 
   AppPath._internal() {
-    _bind();
-  }
-
-  @visibleForTesting
-  Future<void> rebind() async {
-    cacheDir = Completer();
-    _bind();
-    await Future.wait([_dataDir.value, _downloadDir.value, _tempDir.value]);
-  }
-
-  void _bind() {
-    _dataDir = ResolveOnce(supportDirectory);
-    _downloadDir = ResolveOnce(downloadDirectory);
-    _tempDir = ResolveOnce(temporaryDirectory);
-    cacheDirectory().then(cacheDir.complete);
+    appDirPath = join(dirname(Platform.resolvedExecutable));
+    final portableDir = Directory(join(appDirPath, 'portable'));
+    isPortable = system.isWindows && portableDir.existsSync();
+    if (isPortable) {
+      _resolvedDataDirPath = portableDir.path;
+      dataDir.complete(portableDir);
+      var portableTempDir = Directory(join(portableDir.path, 'temp'));
+      try {
+        portableTempDir.createSync(recursive: true);
+      } catch (_) {
+        portableTempDir = Directory.systemTemp;
+      }
+      tempDir.complete(portableTempDir);
+    } else {
+      getApplicationSupportDirectory().then((value) {
+        if (system.isWindows && AppIdentity.isDev) {
+          final dir = Directory(
+            join(value.parent.path, AppIdentity.dataDirName),
+          );
+          _resolvedDataDirPath = dir.path;
+          dataDir.complete(dir);
+        } else {
+          _resolvedDataDirPath = value.path;
+          dataDir.complete(value);
+        }
+      });
+      getTemporaryDirectory().then((value) {
+        tempDir.complete(value);
+      });
+    }
+    getDownloadsDirectory().then((value) {
+      downloadDir.complete(value);
+    });
   }
 
   factory AppPath() {
@@ -61,116 +66,226 @@ class AppPath {
     return dirname(currentExecutablePath);
   }
 
-  String get corePath {
-    return join(executableDirPath, 'OuToCore$executableExtension');
-  }
+  bool get isAppImage =>
+      Platform.isLinux &&
+      (Platform.environment.containsKey('APPIMAGE') ||
+          executableDirPath.contains('/.mount_'));
 
-  String get helperPath {
-    return join(executableDirPath, '$appHelperService$executableExtension');
-  }
-
-  Future<String> get downloadDirPath async {
-    final directory = await _downloadDir.value;
-    return directory?.path ?? await homeDirPath;
-  }
-
-  Future<String> get homeDirPath async {
-    final directory = await _dataDir.value;
-    return directory.path;
-  }
-
-  Future<String> get databasePath async {
-    final mHomeDirPath = await homeDirPath;
-    return join(mHomeDirPath, 'database.sqlite');
-  }
-
-  Future<String> get tempFilePath async {
-    final mTempDir = await _tempDir.value;
-    return join(mTempDir.path, 'temp$uniqueId');
-  }
-
-  Future<String> get lockFilePath async {
-    final homeDirPath = await appPath.homeDirPath;
-    return join(homeDirPath, 'OuTo.lock');
-  }
-
-  Future<String> get configFilePath async {
-    final mHomeDirPath = await homeDirPath;
-    return join(mHomeDirPath, 'config.yaml');
-  }
-
-  Future<String> get sharedPreferencesPath async {
-    final directory = await _dataDir.value;
-    return join(directory.path, 'shared_preferences.json');
-  }
-
-  Future<String> get profilesPath async {
-    final directory = await _dataDir.value;
-    return join(directory.path, profilesDirectoryName);
-  }
-
-  Future<String> getProfilePath(String fileName) async {
-    return join(await profilesPath, '$fileName.yaml');
-  }
-
-  Future<String> get scriptsDirPath async {
-    final path = await homeDirPath;
-    return join(path, 'scripts');
-  }
-
-  Future<String> getScriptPath(String fileName) async {
-    final path = await scriptsDirPath;
-    return join(path, '$fileName.js');
-  }
-
-  Future<String> get providerCacheRootPath async {
-    final directory = await homeDirPath;
-    return join(directory, providersDirectoryName);
-  }
-
-  Future<String> getProviderCachePath(String fileName) async {
+  String get _linuxUserDataDirPath {
+    if (_resolvedDataDirPath != null) return _resolvedDataDirPath!;
+    final xdgData = Platform.environment['XDG_DATA_HOME'];
+    final baseDir = (xdgData != null && xdgData.isNotEmpty)
+        ? xdgData
+        : join(Platform.environment['HOME'] ?? '', '.local', 'share');
     return join(
-      await providerCacheRootPath,
-      rulesProviderDirectoryName,
-      fileName,
+      baseDir,
+      AppIdentity.isDev
+          ? '${AppIdentity.packageId}.dev'
+          : AppIdentity.packageId,
     );
   }
 
-  Future<String> getProvidersRootPath() async {
-    final directory = await profilesPath;
-    return join(directory, providersDirectoryName);
-  }
-
-  Future<String> getProviderDirPath(int profileId, String type) async {
-    final directory = await getProvidersRootPath();
-    return join(directory, profileId.toString(), type);
-  }
-
-  Future<void> ensureProviderDirs(int profileId) async {
-    for (final type in const [
-      proxiesProviderDirectoryName,
-      rulesProviderDirectoryName,
-    ]) {
-      final directory = Directory(await getProviderDirPath(profileId, type));
-      if (await directory.exists()) {
-        continue;
+  String get bundledCorePath {
+    final devWorkspacePath = _devWorkspacePath;
+    if (devWorkspacePath != null) {
+      final corePath = join(
+        devWorkspacePath,
+        'libclash',
+        'windows',
+        '${AppIdentity.coreExecutableName}$executableExtension',
+      );
+      if (File(corePath).existsSync()) {
+        return corePath;
       }
-      await directory.create(recursive: true);
+    }
+
+    return join(
+      executableDirPath,
+      '${AppIdentity.coreExecutableName}$executableExtension',
+    );
+  }
+
+  String get corePath {
+    if (isAppImage) {
+      return join(
+        _linuxUserDataDirPath,
+        'core',
+        '${AppIdentity.coreExecutableName}$executableExtension',
+      );
+    }
+    return bundledCorePath;
+  }
+
+  Future<void> ensureAppImageCoreSynced() async {
+    if (!isAppImage) return;
+
+    final bundled = File(bundledCorePath);
+    if (!bundled.existsSync()) return;
+
+    final external = File(corePath);
+    final stampFile = File(join(external.parent.path, '.core_stamp'));
+
+    final bundledStat = bundled.statSync();
+    final currentStamp =
+        '${bundledStat.size}_${bundledStat.modified.millisecondsSinceEpoch}';
+
+    if (external.existsSync() && stampFile.existsSync()) {
+      try {
+        final recordedStamp = stampFile.readAsStringSync().trim();
+        if (recordedStamp == currentStamp) {
+          return;
+        }
+      } catch (_) {}
+    }
+
+    try {
+      if (!external.parent.existsSync()) {
+        external.parent.createSync(recursive: true);
+      }
+      final tempFile = File('${external.path}.tmp');
+      if (tempFile.existsSync()) {
+        tempFile.deleteSync();
+      }
+      bundled.copySync(tempFile.path);
+      tempFile.renameSync(external.path);
+      Process.runSync('chmod', ['0755', external.path]);
+      stampFile.writeAsStringSync(currentStamp);
+    } catch (e) {
+      commonPrint.warn('Failed to sync AppImage core: $e');
     }
   }
 
-  Future<String> get tempPath async {
-    final directory = await _tempDir.value;
+  String get helperPath {
+    final devWorkspacePath = _devWorkspacePath;
+    if (devWorkspacePath != null) {
+      final helperPath = join(
+        devWorkspacePath,
+        'libclash',
+        'windows',
+        '$appHelperService$executableExtension',
+      );
+      if (File(helperPath).existsSync()) {
+        return helperPath;
+      }
+    }
+
+    return join(executableDirPath, '$appHelperService$executableExtension');
+  }
+
+  String? get _devWorkspacePath {
+    if (!system.isWindows || !AppIdentity.isDev) return null;
+    var directory = Directory(executableDirPath);
+    for (var depth = 0; depth < 8; depth++) {
+      final pubspecPath = join(directory.path, 'pubspec.yaml');
+      if (File(pubspecPath).existsSync()) return directory.path;
+
+      final parent = directory.parent;
+      if (parent.path == directory.path) break;
+      directory = parent;
+    }
+
+    return null;
+  }
+
+  Future<String> get downloadDirPath async {
+    final directory = await downloadDir.future;
     return directory.path;
+  }
+
+  Future<String> get homeDirPath async {
+    final directory = await dataDir.future;
+    return directory.path;
+  }
+
+  Future<String> get lockFilePath async {
+    final directory = await dataDir.future;
+    return join(directory.path, '${AppIdentity.dataDirName}.lock');
+  }
+
+  Future<String> get controlSocketPath async {
+    final directory = await dataDir.future;
+    return join(directory.path, '${AppIdentity.dataDirName}.control.sock');
+  }
+
+  Future<String> get controlPortFilePath async {
+    final directory = await dataDir.future;
+    return join(directory.path, '${AppIdentity.dataDirName}.control.port');
+  }
+
+  Future<String> get sharedPreferencesPath async {
+    final directory = await dataDir.future;
+    return join(directory.path, 'shared_preferences.json');
+  }
+
+  Future<String> get appConfigPath async {
+    final directory = await dataDir.future;
+    return join(directory.path, 'config.json');
+  }
+
+  Future<String> get ipCacheFilePath async {
+    final tempDirectory = await tempPath;
+    return join(tempDirectory, 'ip_cache.json');
+  }
+
+  Future<String> get speedTestPath async {
+    final directory = await dataDir.future;
+    return join(directory.path, 'speed_test.json');
+  }
+
+  Future<String> get toolHistoryPath async {
+    final directory = await dataDir.future;
+    return join(directory.path, 'toolbox_history.json');
+  }
+
+  Future<String> get helperAuthKeyPath async {
+    final directory = await dataDir.future;
+    return join(directory.path, 'helper_auth.key');
+  }
+
+  Future<String> get profilesPath async {
+    final directory = await dataDir.future;
+    return join(directory.path, profilesDirectoryName);
+  }
+
+  Future<String> getProfilePath(String id) async {
+    final directory = await profilesPath;
+    return join(directory, '$id.yaml');
+  }
+
+  Future<String> getScriptPath(String id) async {
+    final directory = await dataDir.future;
+    return join(directory.path, 'scripts', '${basename(id)}.js');
+  }
+
+  Future<String> getProvidersDirPath(String id) async {
+    final directory = await profilesPath;
+    return join(directory, 'providers', id);
+  }
+
+  Future<String> getProvidersFilePath(
+    String id,
+    String type,
+    String url,
+  ) async {
+    final directory = await profilesPath;
+    return join(directory, 'providers', id, type, url.toMd5());
+  }
+
+  Future<String> get tempPath async {
+    final directory = await tempDir.future;
+    return directory.path;
+  }
+
+  Future<String> get relayPath async {
+    final directory = Directory(join(await homeDirPath, 'relay'));
+    await directory.create(recursive: true);
+    return directory.path;
+  }
+
+  Future<String> get uiPath async {
+    final directory = await dataDir.future;
+    return join(directory.path, 'ui');
   }
 }
 
 final appPath = AppPath();
-
-String getBackupFileName() {
-  return '${appName}_backup_${DateTime.now().show}.zip';
-}
-
-String get logFileName {
-  return '${appName}_${DateTime.now().show}.log';
-}

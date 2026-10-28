@@ -1,78 +1,41 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
-import 'package:outo/common/common.dart';
-import 'package:outo/models/models.dart';
+import 'package:bett_box/common/common.dart';
+import 'package:bett_box/models/models.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import '../helpers/app_paths.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-
-  late Directory tempDir;
+  late Directory home;
 
   setUpAll(() async {
-    tempDir = Directory.systemTemp.createTempSync('profile_save_test');
-    await useAppPaths(tempDir);
+    home = await Directory.systemTemp.createTemp('bettbox_profiles_');
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+          const MethodChannel('plugins.flutter.io/path_provider'),
+          (call) async => home.path,
+        );
   });
 
-  tearDownAll(() {
-    try {
-      tempDir.deleteSync(recursive: true);
-    } catch (_) {}
-  });
+  tearDownAll(() => home.delete(recursive: true));
 
-  group('Profile.saveFile', () {
-    // EditProfileView relies on this throwing rather than silently
-    // succeeding, so a caller-level try/catch can surface the failure.
-    test('rejects an invalid config without touching the saved file', () async {
-      final profile = Profile.normal(label: 'p');
-      final bytes = Uint8List.fromList(utf8.encode('bad: ['));
+  test('an unchanged update leaves the profile file untouched', () async {
+    const profile = Profile(id: 'p', autoUpdateDuration: Duration(hours: 1));
+    final file = File(await appPath.getProfilePath(profile.id));
+    final first = utf8.encode('proxies: []\n');
+    final second = utf8.encode('proxies: []\nrules: []\n');
 
-      await expectLater(
-        profile.saveFile(bytes, validate: (_, _) async => 'invalid config'),
-        throwsA(
-          isA<MessageException>().having(
-            (e) => e.message,
-            'message',
-            'invalid config',
-          ),
-        ),
-      );
+    await profile.saveFile(first, validate: false);
+    final stamp = DateTime(2020);
+    await file.setLastModified(stamp);
 
-      final savedFile = await profile.file;
-      expect(await savedFile.length(), 0);
-    });
+    await profile.saveFile(first, validate: false);
+    expect(await file.lastModified(), stamp);
 
-    test('copies validated bytes and stamps the update time', () async {
-      final profile = Profile.normal(label: 'p');
-      final bytes = Uint8List.fromList(utf8.encode('proxies: []'));
-
-      final saved = await profile.saveFile(bytes, validate: (_, _) async => '');
-
-      expect(saved.lastUpdateDate, isNotNull);
-      final savedFile = await profile.file;
-      expect(await savedFile.readAsString(), 'proxies: []');
-    });
-
-    test('validates with the profile age key', () async {
-      final profile = Profile.normal(
-        label: 'p',
-      ).copyWith(ageSecretKey: 'AGE-SECRET-KEY-1A');
-      final bytes = Uint8List.fromList(utf8.encode('proxies: []'));
-      String? ageSecretKey;
-
-      await profile.saveFile(
-        bytes,
-        validate: (_, key) async {
-          ageSecretKey = key;
-          return '';
-        },
-      );
-
-      expect(ageSecretKey, 'AGE-SECRET-KEY-1A');
-    });
+    await profile.saveFile(second, validate: false);
+    expect(await file.lastModified(), isNot(stamp));
+    expect(await file.readAsString(), 'proxies: []\nrules: []\n');
   });
 }

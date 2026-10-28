@@ -1,8 +1,13 @@
+// ignore_for_file: invalid_annotation_target
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:outo/common/common.dart';
-import 'package:outo/enum/enum.dart';
+import 'package:bett_box/clash/core.dart';
+import 'package:bett_box/common/common.dart';
+import 'package:bett_box/enum/enum.dart';
+import 'package:bett_box/models/core.dart';
+import 'package:bett_box/state.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 import 'clash_config.dart';
@@ -10,8 +15,7 @@ import 'clash_config.dart';
 part 'generated/profile.freezed.dart';
 part 'generated/profile.g.dart';
 
-typedef ValidateConfig =
-    Future<String> Function(String path, String ageSecretKey);
+typedef SelectedMap = Map<String, String>;
 
 @freezed
 abstract class SubscriptionInfo with _$SubscriptionInfo {
@@ -25,16 +29,19 @@ abstract class SubscriptionInfo with _$SubscriptionInfo {
   factory SubscriptionInfo.fromJson(Map<String, Object?> json) =>
       _$SubscriptionInfoFromJson(json);
 
+  static int? _parseValue(String? value) {
+    if (value == null) return null;
+    return int.tryParse(value) ?? double.tryParse(value)?.toInt();
+  }
+
   factory SubscriptionInfo.formHString(String? info) {
     if (info == null) return const SubscriptionInfo();
-    final Map<String, int> map = {};
-    for (final field in info.split(';')) {
-      final separator = field.indexOf('=');
-      if (separator == -1) continue;
-      final value = _parseCount(field.substring(separator + 1).trim());
-      if (value != null) {
-        map[field.substring(0, separator).trim().toLowerCase()] = value;
-      }
+    final list = info.split(';');
+    Map<String, int?> map = {};
+    for (final i in list) {
+      final keyValue = i.trim().split('=');
+      if (keyValue.length < 2) continue;
+      map[keyValue[0]] = _parseValue(keyValue[1]);
     }
     return SubscriptionInfo(
       upload: map['upload'] ?? 0,
@@ -43,175 +50,299 @@ abstract class SubscriptionInfo with _$SubscriptionInfo {
       expire: map['expire'] ?? 0,
     );
   }
-
-  static int? _parseCount(String value) {
-    final count = int.tryParse(value);
-    if (count != null) return count;
-    final decimal = double.tryParse(value);
-    return decimal != null && decimal.isFinite ? decimal.truncate() : null;
-  }
 }
 
-extension SubscriptionInfoExt on SubscriptionInfo {
-  double? get usage =>
-      total > 0 ? ((upload + download) / total).clamp(0.0, 1.0) : null;
-
-  DateTime? get expireDate =>
-      expire > 0 ? DateTime.fromMillisecondsSinceEpoch(expire * 1000) : null;
+extension SubscriptionInfoExtension on SubscriptionInfo {
+  String? get expireDesc {
+    if (expire > 0) {
+      final expireDate = DateTime.fromMillisecondsSinceEpoch(
+        expire * 1000,
+      ).show;
+      final isExpired = expire * 1000 < DateTime.now().millisecondsSinceEpoch;
+      return isExpired
+          ? '${appLocalizations.expired} · $expireDate'
+          : expireDate;
+    }
+    return total > 0 ? appLocalizations.infiniteTime : null;
+  }
 }
 
 @freezed
 abstract class Profile with _$Profile {
   const factory Profile({
-    required int id,
-    @Default(ProfileType.file) ProfileType type,
-    @Default('') String label,
+    required String id,
+    String? label,
     String? currentGroupName,
     @Default('') String url,
-    @Default('') String ageSecretKey,
     DateTime? lastUpdateDate,
     required Duration autoUpdateDuration,
     SubscriptionInfo? subscriptionInfo,
     @Default(true) bool autoUpdate,
-    @Default({}) Map<String, String> selectedMap,
+    @Default({}) SelectedMap selectedMap,
     @Default({}) Set<String> unfoldSet,
-    @Default(ExtendType.standard) ExtendType extendType,
-    int? scriptId,
-    String? matchTarget,
-    int? order,
-    @Default(ProfileOverrides())
-    @JsonKey(fromJson: ProfileOverrides.safeFromJson)
-    ProfileOverrides overrides,
+    @Default(OverrideData()) OverrideData overrideData,
+    @JsonKey(includeToJson: false, includeFromJson: false)
+    @Default(false)
+    bool isUpdating,
+    @Default(true) bool useScriptOverride,
+    String? ageSecretKey,
+    @JsonKey(name: 'group-switches')
+    @Default({})
+    Map<String, bool> groupSwitches,
   }) = _Profile;
 
   factory Profile.fromJson(Map<String, Object?> json) =>
       _$ProfileFromJson(json);
 
-  factory Profile.normal({String? label, String url = ''}) {
-    final id = snowflake.id;
+  factory Profile.normal({
+    String? label,
+    String url = '',
+    String? ageSecretKey,
+  }) {
     return Profile(
-      type: url.isEmpty ? ProfileType.file : ProfileType.url,
-      label: label ?? '',
+      label: label,
       url: url,
-      id: id,
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
       autoUpdateDuration: defaultUpdateDuration,
-    );
-  }
-
-  factory Profile.custom({String? label}) {
-    return Profile(
-      id: snowflake.id,
-      type: ProfileType.custom,
-      label: label ?? '',
-      lastUpdateDate: DateTime.now(),
-      autoUpdate: false,
-      autoUpdateDuration: defaultUpdateDuration,
+      ageSecretKey: ageSecretKey,
     );
   }
 }
 
-/// A profile leaving out one of the global rules its extension would add.
 @freezed
-abstract class DisabledRule with _$DisabledRule {
-  const factory DisabledRule({required int profileId, required int ruleId}) =
-      _DisabledRule;
+abstract class OverrideData with _$OverrideData {
+  const factory OverrideData({
+    @Default(false) bool enable,
+    @Default(OverrideRule()) OverrideRule rule,
+  }) = _OverrideData;
+
+  factory OverrideData.fromJson(Map<String, Object?> json) =>
+      _$OverrideDataFromJson(json);
+}
+
+extension OverrideDataExt on OverrideData {
+  List<String> get runningRule {
+    if (!enable) {
+      return [];
+    }
+    return rule.rules.map((item) => item.value).toList();
+  }
+}
+
+@freezed
+abstract class OverrideRule with _$OverrideRule {
+  const factory OverrideRule({
+    @Default(OverrideRuleType.added) OverrideRuleType type,
+    @Default([]) List<Rule> overrideRules,
+    @Default([]) List<Rule> addedRules,
+  }) = _OverrideRule;
+
+  factory OverrideRule.fromJson(Map<String, Object?> json) =>
+      _$OverrideRuleFromJson(json);
+}
+
+extension OverrideRuleExt on OverrideRule {
+  List<Rule> get rules => switch (type == OverrideRuleType.override) {
+    true => overrideRules,
+    false => addedRules,
+  };
+
+  OverrideRule updateRules(List<Rule> Function(List<Rule> rules) builder) {
+    if (type == OverrideRuleType.added) {
+      return copyWith(addedRules: builder(addedRules));
+    }
+    return copyWith(overrideRules: builder(overrideRules));
+  }
 }
 
 extension ProfilesExt on List<Profile> {
-  Profile? getProfile(int? profileId) {
+  Profile? getProfile(String? profileId) {
     final index = indexWhere((profile) => profile.id == profileId);
     return index == -1 ? null : this[index];
   }
 
-  Profile optimizeLabel(Profile profile) {
-    return profile.copyWith(
-      label: uniqueLabelFor(
-        profile.label,
-        fallback: profile.defaultLabel,
-        taken: (label) =>
-            any((item) => item.label == label && item.id != profile.id),
-      ),
-    );
+  bool hasAddedOrChanged(List<Profile> previous) {
+    return any((profile) {
+      final old = previous.getProfile(profile.id);
+      return old == null || old.backupView != profile.backupView;
+    });
   }
 }
 
 extension ProfileExtension on Profile {
-  bool get realAutoUpdate => type == ProfileType.url && autoUpdate;
+  ProfileType get type =>
+      url.isEmpty == true ? ProfileType.file : ProfileType.url;
 
-  String get realLabel => label.takeFirstValid([defaultLabel]);
+  bool get realAutoUpdate => url.isEmpty == true ? false : autoUpdate;
 
-  String get defaultLabel => url.webUri?.host ?? id.toString();
+  Profile get backupView => copyWith(
+    currentGroupName: null,
+    subscriptionInfo: null,
+    selectedMap: const {},
+    unfoldSet: const {},
+    isUpdating: false,
+  );
 
-  String get fileName => '$id.yaml';
-
-  String get exportFileName {
-    final label = realLabel;
-    final lower = label.toLowerCase();
-    if (lower.endsWith('.yaml') || lower.endsWith('.yml')) {
-      return label;
+  Future<void> checkAndUpdate() async {
+    final isExists = await check();
+    if (!isExists) {
+      if (url.isNotEmpty) {
+        await update();
+      }
     }
-    return '$label.yaml';
   }
 
-  String get updatingKey => 'profile_$id';
-
-  Future<Profile?> checkAndUpdateAndCopy({
-    required ValidateConfig validate,
-  }) async {
-    if (type != ProfileType.url) {
-      return null;
-    }
-    final mFile = await _getFile(false);
-    if (await mFile.exists()) {
-      return null;
-    }
-    return update(validate: validate);
+  Future<bool> check() async {
+    final profilePath = await appPath.getProfilePath(id);
+    return await File(profilePath).exists();
   }
 
-  Future<File> _getFile([bool autoCreate = true]) async {
-    final path = await appPath.getProfilePath(id.toString());
+  Future<File> getFile() async {
+    final path = await appPath.getProfilePath(id);
     final file = File(path);
     final isExists = await file.exists();
-    if (!isExists && autoCreate) {
-      return file.create(recursive: true);
+    if (!isExists) {
+      await file.create(recursive: true);
     }
     return file;
   }
 
-  Future<File> get file async {
-    return _getFile();
-  }
-
-  Future<Profile> update({required ValidateConfig validate}) async {
-    final response = await request.getFileResponseForUrl(url);
-    final disposition = response.headers.value('content-disposition');
-    final userinfo = response.headers.value('subscription-userinfo');
-    return copyWith(
-      label: label.takeFirstValid([
-        getFileNameForDisposition(disposition),
-        defaultLabel,
-      ]),
-      subscriptionInfo: SubscriptionInfo.formHString(userinfo),
-    ).saveFile(
-      decompressUnlabeled(response.data ?? Uint8List(0)),
-      validate: validate,
-    );
-  }
-
-  Future<Profile> saveFile(
-    Uint8List bytes, {
-    required ValidateConfig validate,
-  }) async {
-    final path = await appPath.tempFilePath;
-    final tempFile = File(path);
-    await tempFile.safeWriteAsBytes(bytes);
-    final message = await validate(path, ageSecretKey);
-    if (message.isNotEmpty) {
-      throw MessageException(message);
+  Future<void> _writeFile(String content, {SetupParams? setup}) async {
+    final path = await appPath.getProfilePath(id);
+    if (setup == null && await _hasContent(path, content)) return;
+    final tempFile = File('$path.${DateTime.now().microsecondsSinceEpoch}.tmp');
+    await tempFile.parent.create(recursive: true);
+    try {
+      await tempFile.writeAsString(content, flush: true);
+      if (setup != null) {
+        final message = await clashCore.validateConfig(
+          '',
+          setup: setup.copyWith(profilePath: tempFile.path),
+        );
+        if (message.isNotEmpty) {
+          throw message;
+        }
+      }
+      try {
+        await tempFile.rename(path);
+      } catch (_) {
+        await tempFile.copy(path);
+      }
+    } finally {
+      if (await tempFile.exists()) {
+        try {
+          await tempFile.delete();
+        } catch (_) {}
+      }
     }
-    final mFile = await file;
-    await tempFile.copy(mFile.path);
-    await tempFile.safeDelete();
+  }
+
+  Future<bool> _hasContent(String path, String content) async {
+    final file = File(path);
+    if (!await file.exists()) return false;
+    try {
+      return await file.readAsString() == content;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<int> get profileLastModified async {
+    final file = await getFile();
+    return (await file.stat()).modified.microsecondsSinceEpoch;
+  }
+
+  Future<Profile> update({bool validate = true}) async {
+    final response = await request.getFileResponseForUrl(url);
+    final disposition = response.headers['content-disposition']?.firstOrNull;
+    final userinfo = response.headers['subscription-userinfo']?.firstOrNull;
+    return await copyWith(
+      label: label ?? utils.getFileNameForDisposition(disposition) ?? id,
+      subscriptionInfo: SubscriptionInfo.formHString(userinfo),
+    ).saveFile(response.data, validate: validate);
+  }
+
+  Future<Profile> saveFile(Uint8List bytes, {bool validate = true}) async {
+    String content = utf8.decode(bytes);
+    final key = ageSecretKey;
+    if (key != null && key.isNotEmpty) {
+      try {
+        final decrypted = await clashCore.decryptAgeConfig(content, key);
+        if (decrypted.isNotEmpty) {
+          content = decrypted;
+        }
+      } catch (_) {}
+    }
+    content = utils.patchYamlConfig(content);
+    final setup = validate ? await globalState.buildValidateParams(this) : null;
+    if (setup != null) {
+      await _writeFile(content, setup: setup);
+      return copyWith(lastUpdateDate: DateTime.now());
+    }
+    if (validate) {
+      final message = await clashCore.validateConfig(
+        content,
+        ageSecretKey: ageSecretKey,
+      );
+      if (message.isNotEmpty) {
+        final patched = utils.patchValidateConfig(content);
+        if (patched != content) {
+          final patchedMessage = await clashCore.validateConfig(
+            patched,
+            ageSecretKey: ageSecretKey,
+          );
+          if (patchedMessage.isEmpty) {
+            content = patched;
+          } else {
+            throw message;
+          }
+        } else {
+          throw message;
+        }
+      }
+    }
+    await _writeFile(content);
+    return copyWith(lastUpdateDate: DateTime.now());
+  }
+
+  Future<Profile> saveFileWithString(String value) async {
+    String content = value;
+    final key = ageSecretKey;
+    if (key != null && key.isNotEmpty) {
+      try {
+        final decrypted = await clashCore.decryptAgeConfig(content, key);
+        if (decrypted.isNotEmpty) {
+          content = decrypted;
+        }
+      } catch (_) {}
+    }
+    content = utils.patchYamlConfig(content);
+    final setup = await globalState.buildValidateParams(this);
+    if (setup != null) {
+      await _writeFile(content, setup: setup);
+      return copyWith(lastUpdateDate: DateTime.now());
+    }
+    final message = await clashCore.validateConfig(
+      content,
+      ageSecretKey: ageSecretKey,
+    );
+    if (message.isNotEmpty) {
+      final patched = utils.patchValidateConfig(content);
+      if (patched != content) {
+        final patchedMessage = await clashCore.validateConfig(
+          patched,
+          ageSecretKey: ageSecretKey,
+        );
+        if (patchedMessage.isEmpty) {
+          content = patched;
+        } else {
+          throw message;
+        }
+      } else {
+        throw message;
+      }
+    }
+    await _writeFile(content);
     return copyWith(lastUpdateDate: DateTime.now());
   }
 }

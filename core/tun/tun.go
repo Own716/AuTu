@@ -1,107 +1,76 @@
-//go:build android
+//go:build android && cgo
 
 package tun
 
+import "C"
 import (
-	"encoding/json"
-	"net"
-	"net/netip"
-	"strings"
-	"syscall"
-
+	"core/state"
 	"github.com/metacubex/mihomo/constant"
 	LC "github.com/metacubex/mihomo/listener/config"
 	"github.com/metacubex/mihomo/listener/sing_tun"
 	"github.com/metacubex/mihomo/log"
 	"github.com/metacubex/mihomo/tunnel"
+	"net"
+	"net/netip"
 )
 
-type startOptions struct {
-	MTU                  uint32 `json:"mtu"`
-	CongestionController string `json:"congestion-controller"`
+type Props struct {
+	Fd       int    `json:"fd"`
+	Gateway  string `json:"gateway"`
+	Gateway6 string `json:"gateway6"`
+	Portal   string `json:"portal"`
+	Portal6  string `json:"portal6"`
+	Dns      string `json:"dns"`
+	Dns6     string `json:"dns6"`
 }
 
-// Start takes ownership of fd. dupFd is handed to sing_tun.New, which only
-// takes ownership of it once tunNew succeeds inside New; from that point
-// Listener.Close (run by New's own deferred cleanup on error) closes dupFd,
-// so this must never close dupFd itself. New's error alone can't say
-// whether tunNew was reached; the options built below never enable the
-// tun features whose validation runs before tunNew, so New cannot fail
-// before taking ownership of dupFd.
-func Start(fd int, stack, address, dns, rawOptions string) *sing_tun.Listener {
-	var settings startOptions
-	if err := json.Unmarshal([]byte(rawOptions), &settings); err != nil {
-		log.Errorln("TUN: %v", err)
-		_ = syscall.Close(fd)
-		return nil
-	}
+func Start(fd int, device string, stack constant.TUNStack, disableIcmpForwarding bool, mtu uint32, ipv6Enabled bool, congestionController string) (*sing_tun.Listener, error) {
 	var prefix4 []netip.Prefix
-	var prefix6 []netip.Prefix
-	tunStack, ok := constant.StackTypeMapping[strings.ToLower(stack)]
-	if !ok {
-		tunStack = constant.TunMips
+	tempPrefix4, err := netip.ParsePrefix(state.DefaultIpv4Address)
+	if err != nil {
+		log.Errorln("startTUN error:", err)
+		return nil, err
 	}
-	for _, a := range strings.Split(address, ",") {
-		a = strings.TrimSpace(a)
-		if len(a) == 0 {
-			continue
-		}
-		prefix, err := netip.ParsePrefix(a)
+	prefix4 = append(prefix4, tempPrefix4)
+	var prefix6 []netip.Prefix
+	if ipv6Enabled {
+		tempPrefix6, err := netip.ParsePrefix(state.DefaultIpv6Address)
 		if err != nil {
-			log.Errorln("TUN: %v", err)
-			_ = syscall.Close(fd)
-			return nil
+			log.Errorln("startTUN error:", err)
+			return nil, err
 		}
-		if prefix.Addr().Is4() {
-			prefix4 = append(prefix4, prefix)
-		} else {
-			prefix6 = append(prefix6, prefix)
-		}
+		prefix6 = append(prefix6, tempPrefix6)
 	}
 
 	var dnsHijack []string
-	for _, d := range strings.Split(dns, ",") {
-		d = strings.TrimSpace(d)
-		if len(d) == 0 {
-			continue
-		}
-		hijack := net.JoinHostPort(d, "53")
-		if _, err := netip.ParseAddrPort(hijack); err != nil {
-			log.Errorln("TUN: %v", err)
-			_ = syscall.Close(fd)
-			return nil
-		}
-		dnsHijack = append(dnsHijack, hijack)
-	}
+	dnsHijack = append(dnsHijack, net.JoinHostPort(state.GetDnsServerAddress(), "53"))
 
-	dupFd, err := syscall.Dup(fd)
-	if err != nil {
-		log.Errorln("TUN: %v", err)
-		_ = syscall.Close(fd)
-		return nil
+	validMtu := mtu
+	if validMtu < 1280 || validMtu > 65535 {
+		validMtu = 9000
 	}
-	defer func() { _ = syscall.Close(fd) }()
 
 	options := LC.Tun{
-		Enable:               true,
-		Device:               "OuTo",
-		Stack:                tunStack,
-		DNSHijack:            dnsHijack,
-		AutoRoute:            false,
-		AutoDetectInterface:  false,
-		Inet4Address:         prefix4,
-		Inet6Address:         prefix6,
-		MTU:                  settings.MTU,
-		CongestionController: settings.CongestionController,
-		FileDescriptor:       dupFd,
+		Enable:                true,
+		Device:                device,
+		Stack:                 stack,
+		DNSHijack:             dnsHijack,
+		AutoRoute:             false,
+		AutoDetectInterface:   false,
+		Inet4Address:          prefix4,
+		Inet6Address:          prefix6,
+		MTU:                   validMtu,
+		FileDescriptor:        fd,
+		DisableICMPForwarding: disableIcmpForwarding,
+		CongestionController:  congestionController,
 	}
 
 	listener, err := sing_tun.New(options, tunnel.Tunnel)
 
 	if err != nil {
-		log.Errorln("TUN: %v", err)
-		return nil
+		log.Errorln("startTUN error:", err)
+		return nil, err
 	}
 
-	return listener
+	return listener, nil
 }

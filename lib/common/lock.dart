@@ -1,12 +1,7 @@
 import 'dart:io';
 
-import 'package:outo/common/common.dart';
-import 'package:outo/enum/enum.dart';
-import 'package:flutter/foundation.dart';
+import 'package:bett_box/common/common.dart';
 
-/// Keeps two processes off one data directory. Raising the running window is
-/// the platform's job: LaunchServices reopen, GApplication activation, or the
-/// app_links hand-off in the Windows runner.
 class SingleInstanceLock {
   static SingleInstanceLock? _instance;
   RandomAccessFile? _accessFile;
@@ -18,30 +13,28 @@ class SingleInstanceLock {
     return _instance!;
   }
 
-  @visibleForTesting
-  static Future<String> Function() resolvePath = () => appPath.lockFilePath;
-
   Future<bool> acquire() async {
-    try {
-      final lockFilePath = await resolvePath();
-      final lockFile = File(lockFilePath);
-      await lockFile.create();
-      _accessFile = await lockFile.open(mode: FileMode.write);
-      await _accessFile?.lock();
-      return true;
-    } catch (e) {
-      commonPrint.log(
-        'single instance lock acquire failed ${e.toString()}',
-        logLevel: LogLevel.warning,
-      );
-      return false;
+    for (int i = 0; i < 15; i++) {
+      try {
+        final lockFilePath = await appPath.lockFilePath;
+        commonPrint.log(
+          'SingleInstanceLock acquire: dev=${AppIdentity.isDev}, lock=$lockFilePath',
+        );
+        final lockFile = File(lockFilePath);
+        await lockFile.create(recursive: true);
+        _accessFile = await lockFile.open(mode: FileMode.write);
+        await _accessFile?.lock();
+        return true;
+      } catch (e) {
+        commonPrint.warn(
+          'SingleInstanceLock acquire attempt ${i + 1} failed: $e',
+        );
+        if (i < 14) {
+          await Future.delayed(const Duration(milliseconds: 1000));
+        }
+      }
     }
-  }
-
-  @visibleForTesting
-  Future<void> release() async {
-    await _accessFile?.close();
-    _accessFile = null;
+    return false;
   }
 }
 

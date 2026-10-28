@@ -1,5 +1,5 @@
-import 'package:outo/common/common.dart';
-import 'package:outo/enum/enum.dart';
+import 'package:bett_box/common/common.dart';
+import 'package:bett_box/enum/enum.dart';
 import 'package:flutter/services.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
@@ -10,36 +10,35 @@ part 'generated/app.freezed.dart';
 
 typedef DelayMap = Map<String, Map<String, int?>>;
 
-@Freezed(toStringOverride: false)
+@freezed
 abstract class AppState with _$AppState {
   const factory AppState({
     @Default(false) bool isInit,
+    @Default(false) bool backBlock,
     @Default(PageLabel.dashboard) PageLabel pageLabel,
     @Default([]) List<Package> packages,
     @Default(0) int sortNum,
     required Size viewSize,
-    @Default(0) double sideWidth,
     @Default({}) DelayMap delayMap,
     @Default([]) List<Group> groups,
+    @Default(0) int checkIpNum,
     required Brightness brightness,
     int? runTime,
     @Default([]) List<ExternalProvider> providers,
-    String? localIp,
+    NetworkInfo? localNetwork,
     required FixedList<TrackerInfo> requests,
     required int version,
     required FixedList<Log> logs,
     required FixedList<Traffic> traffics,
     required Traffic totalTraffic,
-    @Default(TunAuthorizationState.none)
-    TunAuthorizationState authorizedTunEnable,
+    @Default(false) bool realTunEnable,
     @Default(false) bool loading,
     required SystemUiOverlayStyle systemUiOverlayStyle,
-    @Default(CoreStatus.connecting) CoreStatus coreStatus,
   }) = _AppState;
 }
 
 extension AppStateExt on AppState {
-  ViewMode get viewMode => getViewMode(viewSize.width);
+  ViewMode get viewMode => utils.getViewMode(viewSize.width);
 
   bool get isStart => runTime != null;
 }

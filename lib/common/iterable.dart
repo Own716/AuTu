@@ -1,5 +1,5 @@
-extension IterableExt<E> on Iterable<E> {
-  Iterable<E> separated(E separator) sync* {
+extension IterableExt<T> on Iterable<T> {
+  Iterable<T> separated(T separator) sync* {
     final iterator = this.iterator;
     if (!iterator.moveNext()) return;
 
@@ -11,11 +11,11 @@ extension IterableExt<E> on Iterable<E> {
     }
   }
 
-  Iterable<List<E>> chunks(int size) sync* {
+  Iterable<List<T>> chunks(int size) sync* {
     if (length == 0) return;
-    final iterator = this.iterator;
+    var iterator = this.iterator;
     while (iterator.moveNext()) {
-      final chunk = [iterator.current];
+      var chunk = [iterator.current];
       for (var i = 1; i < size && iterator.moveNext(); i++) {
         chunk.add(iterator.current);
       }
@@ -23,9 +23,9 @@ extension IterableExt<E> on Iterable<E> {
     }
   }
 
-  Iterable<E> fill(int length, {required E Function(int count) filler}) sync* {
+  Iterable<T> fill(int length, {required T Function(int count) filler}) sync* {
     int count = 0;
-    for (final item in this) {
+    for (var item in this) {
       yield item;
       count++;
       if (count >= length) return;
@@ -34,6 +34,11 @@ extension IterableExt<E> on Iterable<E> {
       yield filler(count);
       count++;
     }
+  }
+
+  Iterable<T> takeLast({int count = 50}) {
+    if (count <= 0) return Iterable.empty();
+    return count >= length ? this : toList().skip(length - count);
   }
 }
 
@@ -48,8 +53,7 @@ extension ListExt<T> on List<T> {
   }
 
   List<T> intersection(List<T> list) {
-    final lookup = list.toSet();
-    return where(lookup.contains).toList();
+    return where((item) => list.contains(item)).toList();
   }
 
   List<List<T>> batch(int maxConcurrent) {
@@ -65,54 +69,44 @@ extension ListExt<T> on List<T> {
     return res;
   }
 
-  List<T> copyAndPut(T data, bool Function(T element) test) {
-    final newList = List<T>.from(this);
-    final index = newList.indexWhere(test);
-    if (index != -1) {
-      newList[index] = data;
-    } else {
-      newList.insert(0, data);
+  List<T> safeSublist(int start, [int? end]) {
+    if (start <= 0) return this;
+    if (start > length) return [];
+    if (end != null) {
+      return sublist(start, end.clamp(start, length));
     }
-    return newList;
+    return sublist(start);
   }
 
-  List<T> copyAndReorder(int oldIndex, int newIndex) {
-    final newList = List<T>.from(this);
-    final item = newList.removeAt(oldIndex);
-    newList.insert(newIndex, item);
-    return newList;
-  }
-
-  T? safeGet(int index, {T? defaultValue}) {
-    if (index < 0 || index >= length) {
-      return defaultValue;
-    }
-    return this[index];
-  }
-
-  T safeLast(T defaultValue) {
-    if (isNotEmpty) {
-      return last;
-    }
-    return defaultValue;
-  }
-
-  void addOrRemove(T value) {
-    if (contains(value)) {
-      remove(value);
-    } else {
-      add(value);
-    }
+  T safeGet(int index) {
+    if (length > index) return this[index];
+    return last;
   }
 }
 
-extension SetExt<T> on Set<T> {
-  void addOrRemove(T value) {
-    if (contains(value)) {
-      remove(value);
-    } else {
-      add(value);
+extension DoubleListExt on List<double> {
+  int findInterval(num target) {
+    if (isEmpty) return -1;
+    if (target < first) return -1;
+    if (target >= last) return length - 1;
+
+    int left = 0;
+    int right = length - 1;
+
+    while (left <= right) {
+      int mid = left + (right - left) ~/ 2;
+
+      if (mid == length - 1 ||
+          (this[mid] <= target && target < this[mid + 1])) {
+        return mid;
+      } else if (target < this[mid]) {
+        right = mid - 1;
+      } else {
+        left = mid + 1;
+      }
     }
+
+    return -1;
   }
 }
 

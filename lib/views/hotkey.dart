@@ -1,522 +1,226 @@
-import 'package:outo/common/common.dart';
-import 'package:outo/enum/enum.dart';
-import 'package:outo/l10n/l10n.dart';
-import 'package:outo/models/models.dart';
-import 'package:outo/providers/providers.dart';
-import 'package:outo/ui/icons/icons.dart';
-import 'package:outo/widgets/widgets.dart';
+import 'package:bett_box/common/common.dart';
+import 'package:bett_box/enum/enum.dart';
+import 'package:bett_box/models/models.dart';
+import 'package:bett_box/providers/providers.dart';
+import 'package:bett_box/state.dart';
+import 'package:bett_box/widgets/card.dart';
+import 'package:bett_box/widgets/dialog.dart';
+import 'package:bett_box/widgets/list.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:intl/intl.dart';
 
-Glyph _glyphOf(HotAction action) {
-  return switch (action) {
-    HotAction.view => AppGlyphs.eye,
-    HotAction.start => AppGlyphs.playPause(0),
-    HotAction.exit => AppGlyphs.close,
-    HotAction.mode => AppGlyphs.split,
-    HotAction.ruleMode => AppGlyphs.rules,
-    HotAction.globalMode => AppGlyphs.language,
-    HotAction.directMode => AppGlyphs.target,
-    HotAction.proxy => AppGlyphs.shuffle,
-    HotAction.tun => AppGlyphs.vpn,
-    HotAction.copyEnv => AppGlyphs.code,
-    HotAction.delayTest => AppGlyphs.bolt,
-    HotAction.updateProfiles => AppGlyphs.sync,
-  };
-}
-
-List<(String, List<HotAction>)> _sections(AppLocalizations appLocalizations) {
-  return [
-    (
-      appLocalizations.general,
-      const [HotAction.view, HotAction.start, HotAction.exit],
-    ),
-    (
-      appLocalizations.outboundMode,
-      const [
-        HotAction.mode,
-        HotAction.ruleMode,
-        HotAction.globalMode,
-        HotAction.directMode,
-      ],
-    ),
-    (
-      appLocalizations.network,
-      const [HotAction.proxy, HotAction.tun, HotAction.copyEnv],
-    ),
-    (
-      appLocalizations.proxies,
-      const [HotAction.delayTest, HotAction.updateProfiles],
-    ),
-  ];
-}
-
-bool _sameCombination(HotKeyAction a, HotKeyAction b) {
-  return a.key != null &&
-      a.key == b.key &&
-      keyboardModifierListEquality.equals(a.modifiers, b.modifiers);
-}
-
-HotKeyAction? _conflictOf(List<HotKeyAction> actions, HotKeyAction binding) {
-  for (final item in actions) {
-    if (item.action != binding.action && _sameCombination(item, binding)) {
-      return item;
-    }
-  }
-  return null;
-}
-
-/// Stores [binding] for its action, or clears the action when it has no key.
-/// Another action holding the same combination loses it.
-List<HotKeyAction> _withBinding(
-  List<HotKeyAction> actions,
-  HotKeyAction binding,
-) {
-  final isBound = binding.key != null;
-  var isPlaced = false;
-  final result = <HotKeyAction>[];
-  for (final item in actions) {
-    if (item.action == binding.action) {
-      isPlaced = true;
-      if (isBound) {
-        result.add(binding);
-      }
-    } else if (!(isBound && _sameCombination(item, binding))) {
-      result.add(item);
-    }
-  }
-  if (isBound && !isPlaced) {
-    result.add(binding);
-  }
-  return result;
-}
-
-void _saveBinding(WidgetRef ref, HotKeyAction binding) {
-  final notifier = ref.read(hotKeyActionsProvider.notifier);
-  notifier.value = _withBinding(notifier.value, binding);
+extension IntlExt on Intl {
+  static String actionMessage(String messageText) =>
+      Intl.message('action_$messageText');
 }
 
 class HotKeyView extends StatelessWidget {
   const HotKeyView({super.key});
 
-  @override
-  Widget build(BuildContext context) {
-    final appLocalizations = context.appLocalizations;
-    final labels = ShortcutLabels.host();
-    return BaseScaffold(
-      title: appLocalizations.hotkeyManagement,
-      body: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 16).copyWith(
-          top: context.contentTopPadding,
-          bottom: 20 + context.bottomInset,
-        ),
-        children: [
-          const _HotKeyIntro(),
-          for (final (title, actions) in _sections(appLocalizations))
-            generateSection(
-              title: title,
-              items: [
-                for (final action in actions)
-                  _HotKeyItem(action: action, labels: labels),
-              ],
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class _HotKeyIntro extends StatelessWidget {
-  const _HotKeyIntro();
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = context.colorScheme;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: ShapeDecoration(
-        color: context.raisedSurfaceLevel.colorOf(colorScheme),
-        shape: AppShape.xl,
-      ),
-      child: Row(
-        spacing: 14,
-        children: [
-          GlyphIcon(AppGlyphs.keyboard, color: colorScheme.primary),
-          Expanded(
-            child: Text(
-              context.appLocalizations.hotkeyDesc,
-              style: AppTextStyle.subheadline
-                  .of(context)
-                  .copyWith(color: colorScheme.onSurfaceVariant),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _HotKeyItem extends ConsumerWidget {
-  const _HotKeyItem({required this.action, required this.labels});
-
-  final HotAction action;
-  final ShortcutLabels labels;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final appLocalizations = context.appLocalizations;
-    final colorScheme = context.colorScheme;
-    final hotKeyAction = ref.watch(getHotKeyActionProvider(action));
-    final failure = ref.watch(
-      hotKeyFailuresProvider.select((state) => state[action]),
-    );
+  String getSubtitle(HotKeyAction hotKeyAction) {
     final key = hotKeyAction.key;
-    return DecorationListItem(
-      contentPadding: EdgeInsets.only(left: 16, right: key == null ? 16 : 6),
-      leading: GlyphIcon(_glyphOf(action)),
-      title: Text(action.label, maxLines: 2, overflow: TextOverflow.ellipsis),
-      subtitle: failure == null
-          ? null
-          : Tooltip(
-              message: failure,
-              child: Text(
-                appLocalizations.hotkeyUnavailable,
-                style: AppTextStyle.footnote
-                    .of(context)
-                    .copyWith(color: colorScheme.error),
+    if (key == null) {
+      return appLocalizations.noHotKey;
+    }
+    final modifierLabels = hotKeyAction.modifiers.map(
+      (item) => item.physicalKeys.first.label,
+    );
+    var text = '';
+    if (modifierLabels.isNotEmpty) {
+      text += "${modifierLabels.join(" ")}+";
+    }
+    text += PhysicalKeyboardKey(key).label;
+    return text;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final items = [
+      for (final hotAction in HotAction.values)
+        Consumer(
+          builder: (_, ref, _) {
+            final hotKeyAction = ref.watch(getHotKeyActionProvider(hotAction));
+            return ListItem(
+              title: Text(IntlExt.actionMessage(hotAction.name)),
+              subtitle: Text(
+                getSubtitle(hotKeyAction),
+                style: context.textTheme.bodyMedium?.copyWith(
+                  color: context.colorScheme.primary,
+                ),
               ),
-            ),
-      trailing: key == null
-          ? Text(
-              appLocalizations.hotkeyNotSet,
-              style: AppTextStyle.subheadline
-                  .of(context)
-                  .copyWith(color: colorScheme.outline),
-            )
-          : Row(
-              mainAxisSize: MainAxisSize.min,
-              spacing: 4,
-              children: [
-                _KeyCaps(
-                  parts: labels.parts(hotKeyAction.modifiers, key),
-                  isError: failure != null,
-                ),
-                IconButton(
-                  tooltip: appLocalizations.remove,
-                  onPressed: () {
-                    _saveBinding(ref, HotKeyAction(action: action));
-                  },
-                  icon: const GlyphIcon(AppGlyphs.close, size: 20),
-                ),
-              ],
-            ),
-      onPressed: () {
-        dialogs.showCommonDialog(
-          child: HotKeyRecorder(hotKeyAction: hotKeyAction, labels: labels),
-        );
-      },
-    );
+              onTap: () {
+                globalState.showCommonDialog(
+                  child: HotKeyRecorder(hotKeyAction: hotKeyAction),
+                );
+              },
+            );
+          },
+        ),
+    ];
+    return generateListView(generateSection(items: items));
   }
 }
 
-class _KeyCaps extends StatelessWidget {
-  const _KeyCaps({
-    required this.parts,
-    this.isLarge = false,
-    this.isError = false,
-  });
-
-  final List<String> parts;
-  final bool isLarge;
-  final bool isError;
-
-  @override
-  Widget build(BuildContext context) {
-    return Wrap(
-      spacing: isLarge ? 8 : 4,
-      runSpacing: isLarge ? 8 : 4,
-      alignment: WrapAlignment.center,
-      children: [
-        for (final part in parts)
-          _KeyCap(label: part, isLarge: isLarge, isError: isError),
-      ],
-    );
-  }
-}
-
-class _KeyCap extends StatelessWidget {
-  const _KeyCap({
-    required this.label,
-    this.isLarge = false,
-    this.isError = false,
-    this.isPlaceholder = false,
-  });
-
-  final String label;
-  final bool isLarge;
-  final bool isError;
-  final bool isPlaceholder;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = context.colorScheme;
-    final side = isLarge ? 44.0 : 26.0;
-    final foregroundColor = isError
-        ? colorScheme.onErrorContainer
-        : colorScheme.onSurfaceVariant;
-    final textStyle = isLarge
-        ? AppTextStyle.headline.of(context)
-        : AppTextStyle.caption1.of(context, emphasized: true);
-    return Container(
-      constraints: BoxConstraints(minWidth: side, minHeight: side),
-      padding: EdgeInsets.symmetric(horizontal: isLarge ? 12 : 7),
-      decoration: ShapeDecoration(
-        color: isPlaceholder
-            ? Colors.transparent
-            : isError
-            ? colorScheme.errorContainer
-            : context.raisedSurfaceLevel.colorOf(colorScheme),
-        shape: isLarge ? AppShape.md : AppShape.sm,
-      ),
-      child: Align(
-        widthFactor: 1,
-        heightFactor: 1,
-        child: Text(label, style: textStyle.copyWith(color: foregroundColor)),
-      ),
-    );
-  }
-}
-
-class HotKeyRecorder extends ConsumerStatefulWidget {
-  const HotKeyRecorder({
-    super.key,
-    required this.hotKeyAction,
-    required this.labels,
-  });
-
+class HotKeyRecorder extends StatefulWidget {
   final HotKeyAction hotKeyAction;
-  final ShortcutLabels labels;
+
+  const HotKeyRecorder({super.key, required this.hotKeyAction});
 
   @override
-  ConsumerState<HotKeyRecorder> createState() => _HotKeyRecorderState();
+  State<HotKeyRecorder> createState() => _HotKeyRecorderState();
 }
 
-class _HotKeyRecorderState extends ConsumerState<HotKeyRecorder> {
-  late final HotKeyRecording _recording;
-  Set<KeyboardModifier> _modifiers = const {};
-  int? _key;
-
-  HotKeyAction get _draft =>
-      widget.hotKeyAction.copyWith(modifiers: _modifiers, key: _key);
+class _HotKeyRecorderState extends State<HotKeyRecorder> {
+  late ValueNotifier<HotKeyAction> hotKeyActionNotifier;
 
   @override
   void initState() {
     super.initState();
-    _recording = ref.read(hotKeyRecordingProvider.notifier);
+    hotKeyActionNotifier = ValueNotifier<HotKeyAction>(
+      widget.hotKeyAction.copyWith(),
+    );
     HardwareKeyboard.instance.addHandler(_handleKeyEvent);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _recording.value = true;
-      }
-    });
+  }
+
+  bool _handleKeyEvent(KeyEvent keyEvent) {
+    if (keyEvent is KeyUpEvent) return false;
+    final keys = HardwareKeyboard.instance.physicalKeysPressed;
+
+    final key = keyEvent.physicalKey;
+
+    final modifiers = KeyboardModifier.values
+        .where(
+          (e) =>
+              e.physicalKeys.any(keys.contains) &&
+              !e.physicalKeys.contains(key),
+        )
+        .toSet();
+    hotKeyActionNotifier.value = hotKeyActionNotifier.value.copyWith(
+      modifiers: modifiers,
+      key: key.usbHidUsage,
+    );
+    return false;
   }
 
   @override
   void dispose() {
     HardwareKeyboard.instance.removeHandler(_handleKeyEvent);
-    final recording = _recording;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      recording.value = false;
-    });
     super.dispose();
-  }
-
-  Set<KeyboardModifier> _heldModifiers({PhysicalKeyboardKey? except}) {
-    final pressed = HardwareKeyboard.instance.physicalKeysPressed;
-    return {
-      for (final modifier in KeyboardModifier.values)
-        if (modifier.physicalKeys.any(pressed.contains) &&
-            !modifier.physicalKeys.contains(except))
-          modifier,
-    };
-  }
-
-  bool _handleKeyEvent(KeyEvent event) {
-    final physicalKey = event.physicalKey;
-    if (isModifierKey(physicalKey)) {
-      if (event is KeyDownEvent || (event is KeyUpEvent && _key == null)) {
-        setState(() {
-          _key = null;
-          _modifiers = _heldModifiers();
-        });
-      }
-      return false;
-    }
-    if (event is KeyUpEvent) {
-      return false;
-    }
-    final modifiers = _heldModifiers(except: physicalKey);
-    if (physicalKey == PhysicalKeyboardKey.escape && modifiers.isEmpty) {
-      Navigator.of(context).pop();
-      return false;
-    }
-    setState(() {
-      _modifiers = modifiers;
-      _key = physicalKey.usbHidUsage;
-    });
-    return false;
-  }
-
-  void _handleSave() {
-    Navigator.of(context).pop();
-    _saveBinding(ref, _draft);
   }
 
   void _handleRemove() {
     Navigator.of(context).pop();
-    _saveBinding(ref, HotKeyAction(action: widget.hotKeyAction.action));
+    globalState.appController.updateOrAddHotKeyAction(
+      hotKeyActionNotifier.value.copyWith(modifiers: {}, key: null),
+    );
   }
 
-  Widget _buildCapture(BuildContext context, {required bool isError}) {
-    final colorScheme = context.colorScheme;
-    final key = _key;
-    final Widget content;
-    if (key != null) {
-      content = _KeyCaps(
-        parts: widget.labels.parts(_modifiers, key),
-        isLarge: true,
-        isError: isError,
+  void _handleConfirm() {
+    Navigator.of(context).pop();
+    final config = globalState.config;
+    final currentHotkeyAction = hotKeyActionNotifier.value;
+    if (currentHotkeyAction.key == null ||
+        currentHotkeyAction.modifiers.isEmpty) {
+      globalState.showMessage(
+        title: appLocalizations.tip,
+        message: TextSpan(text: appLocalizations.inputCorrectHotkey),
+        cancelable: false,
       );
-    } else if (_modifiers.isNotEmpty) {
-      content = Wrap(
-        spacing: 8,
-        alignment: WrapAlignment.center,
-        children: [
-          for (final part in widget.labels.modifierParts(_modifiers))
-            _KeyCap(label: part, isLarge: true),
-          const _KeyCap(label: '…', isLarge: true, isPlaceholder: true),
-        ],
-      );
-    } else {
-      content = Text(
-        context.appLocalizations.pressKeyboard,
-        textAlign: TextAlign.center,
-        style: AppTextStyle.body
-            .of(context)
-            .copyWith(color: colorScheme.onSurfaceVariant),
-      );
+      return;
     }
-    final level = context.raisedSurfaceLevel;
-    return Container(
-      constraints: const BoxConstraints(minHeight: 96),
-      padding: const EdgeInsets.all(16),
-      alignment: Alignment.center,
-      decoration: ShapeDecoration(
-        color: level.colorOf(colorScheme),
-        shape: AppShape.md.copyWith(
-          side: BorderSide(
-            color: isError ? colorScheme.error : colorScheme.primary,
-            width: 2,
+    final hotKeyActions = config.hotKeyActions;
+    final index = hotKeyActions.indexWhere(
+      (item) =>
+          item.key == currentHotkeyAction.key &&
+          keyboardModifierListEquality.equals(
+            item.modifiers,
+            currentHotkeyAction.modifiers,
           ),
-        ),
-      ),
-      child: SurfaceScope(level: level, child: content),
     );
-  }
-
-  Widget? _buildStatus(
-    BuildContext context, {
-    required bool isInvalid,
-    required HotKeyAction? conflict,
-  }) {
-    final appLocalizations = context.appLocalizations;
-    final colorScheme = context.colorScheme;
-    final (text, color) = switch ((isInvalid, conflict)) {
-      (true, _) => (
-        appLocalizations.hotkeyNeedsModifier(
-          widget.labels
-              .modifierParts(primaryHotKeyModifiers)
-              .join(widget.labels.isMacOS ? ' ' : ', '),
-        ),
-        colorScheme.error,
-      ),
-      (false, final HotKeyAction conflict) => (
-        appLocalizations.hotkeyConflictWith(conflict.action.label),
-        colorScheme.tertiary,
-      ),
-      _ => (null, null),
-    };
-    if (text == null) {
-      return null;
+    if (index != -1) {
+      globalState.showMessage(
+        title: appLocalizations.tip,
+        message: TextSpan(text: appLocalizations.hotkeyConflict),
+        cancelable: false,
+      );
+      return;
     }
-    return Padding(
-      padding: const EdgeInsets.only(top: 12),
-      child: Text(
-        text,
-        style: AppTextStyle.subheadline.of(context).copyWith(color: color),
-      ),
-    );
+    globalState.appController.updateOrAddHotKeyAction(currentHotkeyAction);
   }
 
   @override
   Widget build(BuildContext context) {
-    final appLocalizations = context.appLocalizations;
-    final draft = _draft;
-    final isComplete = draft.key != null;
-    final isValid = isValidHotKey(draft.modifiers, draft.key);
-    final isInvalid = isComplete && !isValid;
-    final conflict = isValid
-        ? _conflictOf(ref.watch(hotKeyActionsProvider), draft)
-        : null;
-    final status = _buildStatus(
-      context,
-      isInvalid: isInvalid,
-      conflict: conflict,
-    );
     return Focus(
       onKeyEvent: (_, _) {
         return KeyEventResult.handled;
       },
       autofocus: true,
       child: CommonDialog(
-        title: widget.hotKeyAction.action.label,
-        hasFields: true,
+        title: IntlExt.actionMessage(widget.hotKeyAction.action.name),
         actions: [
           TextButton(
             onPressed: () {
-              Navigator.of(context).pop();
+              _handleRemove();
             },
-            child: Text(appLocalizations.cancel),
+            child: Text(appLocalizations.remove),
           ),
-          if (widget.hotKeyAction.key != null)
-            TextButton(
-              onPressed: _handleRemove,
-              style: ButtonStyle(
-                foregroundColor: WidgetStatePropertyAll(
-                  context.colorScheme.destructive,
-                ),
-              ),
-              child: Text(appLocalizations.remove),
-            ),
+          const SizedBox(width: 8),
           TextButton(
-            onPressed: isValid ? _handleSave : null,
-            child: Text(appLocalizations.save),
+            onPressed: () {
+              _handleConfirm();
+            },
+            child: Text(appLocalizations.confirm),
           ),
         ],
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _buildCapture(context, isError: isInvalid),
-            AnimatedSize(
-              duration: commonDuration,
-              alignment: Alignment.topCenter,
-              child: status ?? const SizedBox(width: double.infinity),
-            ),
-          ],
+        child: ValueListenableBuilder(
+          valueListenable: hotKeyActionNotifier,
+          builder: (_, hotKeyAction, _) {
+            final key = hotKeyAction.key;
+            final modifiers = hotKeyAction.modifiers;
+            return SizedBox(
+              width: dialogCommonWidth,
+              child: key != null
+                  ? Wrap(
+                      spacing: 8,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        for (final modifier in modifiers)
+                          KeyboardKeyBox(
+                            keyboardKey: modifier.physicalKeys.first,
+                          ),
+                        if (modifiers.isNotEmpty)
+                          Text('+', style: context.textTheme.titleMedium),
+                        KeyboardKeyBox(keyboardKey: PhysicalKeyboardKey(key)),
+                      ],
+                    )
+                  : Text(
+                      appLocalizations.pressKeyboard,
+                      style: context.textTheme.titleMedium,
+                    ),
+            );
+          },
         ),
       ),
+    );
+  }
+}
+
+class KeyboardKeyBox extends StatelessWidget {
+  final KeyboardKey keyboardKey;
+
+  const KeyboardKeyBox({super.key, required this.keyboardKey});
+
+  @override
+  Widget build(BuildContext context) {
+    return CommonCard(
+      type: CommonCardType.filled,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Text(keyboardKey.label, style: const TextStyle(fontSize: 16)),
+      ),
+      onPressed: () {},
     );
   }
 }

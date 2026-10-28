@@ -1,34 +1,28 @@
 import 'dart:async';
-import 'dart:io';
 
-import 'package:outo/common/boot_record.dart';
-import 'package:outo/common/common.dart';
-import 'package:outo/enum/enum.dart';
-import 'package:outo/models/models.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:bett_box/common/app_localizations.dart';
+import 'package:bett_box/common/system.dart';
+import 'package:bett_box/models/models.dart';
 import 'package:flutter/services.dart';
-
-const _platformProbeTimeout = Duration(seconds: 2);
+import 'package:intl/intl.dart';
 
 class App {
   static App? _instance;
   late MethodChannel methodChannel;
   Function()? onExit;
-  Function()? onPackagesChanged;
-  final floatingKeyboard = ValueNotifier(false);
 
   App._internal() {
-    methodChannel = const MethodChannel('$packageName/app');
+    methodChannel = const MethodChannel('app');
     methodChannel.setMethodCallHandler((call) async {
       switch (call.method) {
         case 'exit':
-          if (onExit != null) {
-            await onExit!();
+          await onExit?.call();
+        case 'getText':
+          try {
+            return Intl.message(call.arguments as String);
+          } catch (_) {
+            return '';
           }
-        case 'packagesChanged':
-          onPackagesChanged?.call();
-        case 'floatingImeChanged':
-          floatingKeyboard.value = call.arguments as bool;
         default:
           throw MissingPluginException();
       }
@@ -41,142 +35,117 @@ class App {
   }
 
   Future<bool?> moveTaskToBack() async {
-    return methodChannel.invokeMethod<bool>('moveTaskToBack');
+    return await methodChannel.invokeMethod<bool>('moveTaskToBack');
   }
 
-  Future<List<Package>> getPackages() async {
-    final packagesString = await methodChannel.invokeMethod<String>(
+  Future<List<Package>> getPackages({bool forceRefresh = false}) async {
+    final packagesRaw = await methodChannel.invokeListMethod<Map<dynamic, dynamic>>(
       'getPackages',
+      {'forceRefresh': forceRefresh},
+    ) ?? const [];
+    return packagesRaw
+        .map((e) => Package.fromJson(Map<String, Object?>.from(e)))
+        .toList();
+  }
+
+  Future<bool> hasPackageListPermission() async {
+    final result = await methodChannel.invokeMethod<bool>(
+      'hasPackageListPermission',
     );
-    final List<dynamic> packagesRaw =
-        (await packagesString?.decodeJson<List<dynamic>>()) ?? [];
-    return packagesRaw.map((e) => Package.fromJson(e)).toSet().toList();
+    return result ?? true;
   }
 
-  Future<bool> isInstalledAppsPermissionGranted() async {
-    return await methodChannel.invokeMethod<bool>(
-          'isInstalledAppsPermissionGranted',
-        ) ??
-        true;
+  Future<bool> hasCameraPermission() async {
+    final result = await methodChannel.invokeMethod<bool>(
+      'hasCameraPermission',
+    );
+    return result ?? true;
   }
 
-  Future<bool> requestInstalledAppsPermission() async {
-    return await methodChannel.invokeMethod<bool>(
-          'requestInstalledAppsPermission',
-        ) ??
-        false;
+  Future<void> requestPackageListPermission() async {
+    await methodChannel.invokeMethod<void>('requestPackageListPermission');
   }
 
-  /// Android 17 drops traffic between the app and the local network until the
-  /// user grants this; earlier versions answer true.
-  Future<bool> requestLocalNetworkPermission() async {
-    return await methodChannel.invokeMethod<bool>(
-          'requestLocalNetworkPermission',
-        ) ??
+  Future<void> openAppSettings() async {
+    await methodChannel.invokeMethod<void>('openAppSettings');
+  }
+
+  Future<bool> openFcmDiagnostics() async {
+    if (!system.isAndroid) return false;
+    return await methodChannel.invokeMethod<bool>('openFcmDiagnostics') ??
         false;
   }
 
   Future<List<String>> getChinaPackageNames() async {
-    final packageNamesString = await methodChannel.invokeMethod<String>(
-      'getChinaPackageNames',
-    );
-    final List<dynamic> packageNamesRaw =
-        await packageNamesString?.decodeJson<List<dynamic>>() ?? [];
+    final packageNamesRaw =
+        await methodChannel.invokeListMethod<String>('getChinaPackageNames') ??
+        const [];
     return packageNamesRaw.map((e) => e.toString()).toList();
   }
 
-  final Map<String, ImageProvider?> _packageIcons = {};
-  final Map<String, Future<ImageProvider?>> _packageIconTasks = {};
-  final TaskPool _packageIconPool = TaskPool(maxConcurrentIconLoads);
-
-  ImageProvider? getCachedPackageIcon(String packageName) {
-    return _packageIcons[packageName];
-  }
-
-  Future<ImageProvider?> getPackageIcon(String packageName) {
-    if (_packageIcons.containsKey(packageName)) {
-      return Future.value(_packageIcons[packageName]);
-    }
-    return _packageIconTasks[packageName] ??= _loadPackageIcon(packageName);
-  }
-
-  Future<ImageProvider?> _loadPackageIcon(String packageName) async {
-    var icon = await _requestPackageIcon(packageName);
-    if (icon == null && packageName.isNotEmpty) {
-      icon = await getPackageIcon('');
-    }
-    _packageIcons[packageName] = icon;
-    unawaited(_packageIconTasks.remove(packageName));
-    return icon;
-  }
-
-  Future<ImageProvider?> _requestPackageIcon(String packageName) async {
-    try {
-      final path = await _packageIconPool.run(
-        () => methodChannel.invokeMethod<String>('getPackageIcon', {
-          'packageName': packageName,
-        }),
-      );
-      if (path == null || path.isEmpty) {
-        return null;
-      }
-      return FileImage(File(path));
-    } catch (error) {
-      commonPrint.log('getPackageIcon error: $error');
-      return null;
-    }
-  }
-
-  @visibleForTesting
-  void clearPackageIconCache() {
-    _packageIcons.clear();
-    _packageIconTasks.clear();
-  }
-
-  Future<bool?> tip(String? message) async {
-    return methodChannel.invokeMethod<bool>('tip', {'message': '$message'});
-  }
-
-  Future<bool?> initShortcuts() async {
-    return methodChannel.invokeMethod<bool>('initShortcuts', {
-      'start': currentAppLocalizations.start,
-      'stop': currentAppLocalizations.stop,
-      'toggle': currentAppLocalizations.toggle,
+  Future<Uint8List?> getPackageIcon(
+    String packageName, {
+    bool forceRefresh = false,
+  }) async {
+    return await methodChannel.invokeMethod<Uint8List>('getPackageIcon', {
+      'packageName': packageName,
+      'forceRefresh': forceRefresh,
     });
   }
 
+  Future<bool?> tip(String? message) async {
+    if (message == null || message.isEmpty) return false;
+    return await methodChannel.invokeMethod<bool>('tip', {
+      'message': message,
+    });
+  }
+
+  Future<bool?> initShortcuts() async {
+    return await methodChannel.invokeMethod<bool>(
+      'initShortcuts',
+      {
+        'toggle': appLocalizations.toggle,
+        'start': appLocalizations.start,
+        'stop': appLocalizations.stop,
+      },
+    );
+  }
+
   Future<bool?> updateExcludeFromRecents(bool value) async {
-    return methodChannel.invokeMethod<bool>('updateExcludeFromRecents', {
+    return await methodChannel.invokeMethod<bool>('updateExcludeFromRecents', {
       'value': value,
     });
   }
 
-  Future<bool?> openAppSettings() async {
-    if (!Platform.isAndroid) return false;
-    return methodChannel.invokeMethod<bool>('openAppSettings');
+  Future<int> getSelfLastUpdateTime() async {
+    final result = await methodChannel.invokeMethod<int>(
+      'getSelfLastUpdateTime',
+    );
+    return result ?? 0;
   }
 
-  Future<AppExitInfo?> getLastExitInfo() async {
-    try {
-      final raw = await methodChannel
-          .invokeMapMethod<String, Object?>('getLastExitInfo')
-          .timeout(_platformProbeTimeout);
-      return AppExitInfo.fromJson(raw);
-    } catch (error) {
-      commonPrint.log(
-        'Failed to read the last process exit info: ${compactError(error)}',
-        logLevel: LogLevel.warning,
-      );
-      return null;
-    }
+  Future<bool> isIgnoringBatteryOptimizations() async {
+    final result = await methodChannel.invokeMethod<bool>(
+      'isIgnoringBatteryOptimizations',
+    );
+    return result ?? false;
   }
 
-  Future<void> updateThemeMode(String mode) async {
-    if (!Platform.isAndroid) return;
-    try {
-      await methodChannel.invokeMethod('updateThemeMode', {'mode': mode});
-    } catch (_) {}
+  Future<void> requestIgnoreBatteryOptimizations() async {
+    await methodChannel.invokeMethod<void>('requestIgnoreBatteryOptimizations');
+  }
+
+  Future<bool> setLauncherIcon(bool useDarkIcon) async {
+    final result = await methodChannel.invokeMethod<bool>('setLauncherIcon', {
+      'useDarkIcon': useDarkIcon,
+    });
+    return result ?? false;
+  }
+
+  Future<bool> isAndroidTV() async {
+    final result = await methodChannel.invokeMethod<bool>('isAndroidTV');
+    return result ?? false;
   }
 }
 
-final app = system.isAndroid ? App() : null;
+final app = App();

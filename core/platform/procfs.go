@@ -1,20 +1,24 @@
 //go:build linux
+// +build linux
 
 package platform
 
 import (
 	"bufio"
-	"bytes"
 	"encoding/binary"
 	"encoding/hex"
+	"fmt"
 	"net"
 	"os"
 	"strconv"
 	"strings"
+	"unsafe"
 )
 
 var netIndexOfLocal = -1
 var netIndexOfUid = -1
+
+var nativeEndian binary.ByteOrder
 
 func QuerySocketUidFromProcFs(source, _ net.Addr) int {
 	if netIndexOfLocal < 0 || netIndexOfUid < 0 {
@@ -60,40 +64,6 @@ func QuerySocketUidFromProcFs(source, _ net.Addr) int {
 	return uid
 }
 
-func localAddressColumn(sIP net.IP, sPort int) []byte {
-	ip := nativeEndianIP(sIP)
-	column := make([]byte, 0, hex.EncodedLen(len(ip))+1+4)
-
-	encoded := make([]byte, hex.EncodedLen(len(ip)))
-	hex.Encode(encoded, ip)
-	column = append(column, encoded...)
-
-	column = append(column, ':')
-
-	var port [2]byte
-	binary.BigEndian.PutUint16(port[:], uint16(sPort))
-	var encodedPort [4]byte
-	hex.Encode(encodedPort[:], port[:])
-	return append(column, encodedPort[:]...)
-}
-
-func column(row []byte, index int) []byte {
-	for i := 0; ; i++ {
-		row = bytes.TrimLeft(row, " \t")
-		if len(row) == 0 {
-			return nil
-		}
-		end := bytes.IndexAny(row, " \t")
-		if end < 0 {
-			end = len(row)
-		}
-		if i == index {
-			return row[:end]
-		}
-		row = row[end:]
-	}
-}
-
 func doQuery(path string, sIP net.IP, sPort int) int {
 	file, err := os.Open(path)
 	if err != nil {
@@ -104,30 +74,35 @@ func doQuery(path string, sIP net.IP, sPort int) int {
 		_ = file.Close()
 	}(file)
 
-	local := localAddressColumn(sIP, sPort)
+	reader := bufio.NewReader(file)
 
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		row := scanner.Bytes()
+	var bytes [2]byte
 
-		if !bytes.EqualFold(local, column(row, netIndexOfLocal)) {
-			continue
-		}
+	binary.BigEndian.PutUint16(bytes[:], uint16(sPort))
 
-		uidColumn := column(row, netIndexOfUid)
-		if uidColumn == nil {
-			return -1
-		}
+	local := fmt.Sprintf("%s:%s", hex.EncodeToString(nativeEndianIP(sIP)), hex.EncodeToString(bytes[:]))
 
-		uid, err := strconv.Atoi(string(uidColumn))
+	for {
+		row, _, err := reader.ReadLine()
 		if err != nil {
 			return -1
 		}
 
-		return uid
-	}
+		fields := strings.Fields(string(row))
 
-	return -1
+		if len(fields) <= netIndexOfLocal || len(fields) <= netIndexOfUid {
+			continue
+		}
+
+		if strings.EqualFold(local, fields[netIndexOfLocal]) {
+			uid, err := strconv.Atoi(fields[netIndexOfUid])
+			if err != nil {
+				return -1
+			}
+
+			return uid
+		}
+	}
 }
 
 func nativeEndianIP(ip net.IP) []byte {
@@ -136,7 +111,7 @@ func nativeEndianIP(ip net.IP) []byte {
 	for i := 0; i < len(ip); i += 4 {
 		value := binary.BigEndian.Uint32(ip[i:])
 
-		binary.NativeEndian.PutUint32(result[i:], value)
+		nativeEndian.PutUint32(result[i:], value)
 	}
 
 	return result
@@ -188,5 +163,14 @@ func init() {
 		case "uid":
 			netIndexOfUid = idx + offset
 		}
+	}
+}
+
+func init() {
+	var x uint32 = 0x01020304
+	if *(*byte)(unsafe.Pointer(&x)) == 0x01 {
+		nativeEndian = binary.BigEndian
+	} else {
+		nativeEndian = binary.LittleEndian
 	}
 }

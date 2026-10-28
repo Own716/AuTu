@@ -41,7 +41,7 @@ final class AppSettingProvider
   }
 }
 
-String _$appSettingHash() => r'520a3125e1d0baca1fb65abb2110ad4419f8b2d9';
+String _$appSettingHash() => r'2a3e6c9e8f289fa07bc8d6205b0994a59aa09ad3';
 
 abstract class _$AppSetting extends $Notifier<AppSettingProps> {
   AppSettingProps build();
@@ -72,7 +72,7 @@ final class WindowSettingProvider
         argument: null,
         retry: null,
         name: r'windowSettingProvider',
-        isAutoDispose: false,
+        isAutoDispose: true,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
@@ -93,7 +93,7 @@ final class WindowSettingProvider
   }
 }
 
-String _$windowSettingHash() => r'b466fe4c113bb896939b5f0c96795cb09dd2759a';
+String _$windowSettingHash() => r'9bf31c7e08fab84213f31e249270f9d730bdf711';
 
 abstract class _$WindowSetting extends $Notifier<WindowProps> {
   WindowProps build();
@@ -144,7 +144,7 @@ final class VpnSettingProvider extends $NotifierProvider<VpnSetting, VpnProps> {
   }
 }
 
-String _$vpnSettingHash() => r'dd0ff8720c2c4f22fc973305de8c87bcbee4536e';
+String _$vpnSettingHash() => r'3dae8b56504bfb906aca546c5a5389d79d259a5e';
 
 abstract class _$VpnSetting extends $Notifier<VpnProps> {
   VpnProps build();
@@ -196,7 +196,7 @@ final class NetworkSettingProvider
   }
 }
 
-String _$networkSettingHash() => r'fa204b5ad21bc3e73c07aa6989f68c288ca20aaf';
+String _$networkSettingHash() => r'5a30d4cbfaba94cc29ad08dc1771ebb368b4ba14';
 
 abstract class _$NetworkSetting extends $Notifier<NetworkProps> {
   NetworkProps build();
@@ -248,7 +248,7 @@ final class ThemeSettingProvider
   }
 }
 
-String _$themeSettingHash() => r'47c656bdac6ea1320d54c4599ce1fde993e989a1';
+String _$themeSettingHash() => r'0b5620b696d73260d94f63cbfb65857acd2000f0';
 
 abstract class _$ThemeSetting extends $Notifier<ThemeProps> {
   ThemeProps build();
@@ -268,11 +268,63 @@ abstract class _$ThemeSetting extends $Notifier<ThemeProps> {
   }
 }
 
+@ProviderFor(Profiles)
+final profilesProvider = ProfilesProvider._();
+
+final class ProfilesProvider
+    extends $NotifierProvider<Profiles, List<Profile>> {
+  ProfilesProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'profilesProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$profilesHash();
+
+  @$internal
+  @override
+  Profiles create() => Profiles();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(List<Profile> value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<List<Profile>>(value),
+    );
+  }
+}
+
+String _$profilesHash() => r'3203cc7de88b91fff86b79c75c2cacd8116fffb7';
+
+abstract class _$Profiles extends $Notifier<List<Profile>> {
+  List<Profile> build();
+  @$mustCallSuper
+  @override
+  WhenComplete runBuild() {
+    final ref = this.ref as $Ref<List<Profile>, List<Profile>>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<List<Profile>, List<Profile>>,
+              List<Profile>,
+              Object?,
+              Object?
+            >;
+    return element.handleCreate(ref, build);
+  }
+}
+
 @ProviderFor(CurrentProfileId)
 final currentProfileIdProvider = CurrentProfileIdProvider._();
 
 final class CurrentProfileIdProvider
-    extends $NotifierProvider<CurrentProfileId, int?> {
+    extends $NotifierProvider<CurrentProfileId, String?> {
   CurrentProfileIdProvider._()
     : super(
         from: null,
@@ -292,27 +344,27 @@ final class CurrentProfileIdProvider
   CurrentProfileId create() => CurrentProfileId();
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(int? value) {
+  Override overrideWithValue(String? value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride: $SyncValueProvider<int?>(value),
+      providerOverride: $SyncValueProvider<String?>(value),
     );
   }
 }
 
-String _$currentProfileIdHash() => r'98ff7a3a0b8ed420d086993839f4d629df7590a6';
+String _$currentProfileIdHash() => r'0c3e324e751aac1164da479e1796e826615bdcbe';
 
-abstract class _$CurrentProfileId extends $Notifier<int?> {
-  int? build();
+abstract class _$CurrentProfileId extends $Notifier<String?> {
+  String? build();
   @$mustCallSuper
   @override
   WhenComplete runBuild() {
-    final ref = this.ref as $Ref<int?, int?>;
+    final ref = this.ref as $Ref<String?, String?>;
     final element =
         ref.element
             as $ClassProviderElement<
-              AnyNotifier<int?, int?>,
-              int?,
+              AnyNotifier<String?, String?>,
+              String?,
               Object?,
               Object?
             >;
@@ -320,51 +372,362 @@ abstract class _$CurrentProfileId extends $Notifier<int?> {
   }
 }
 
-@ProviderFor(DavSetting)
-final davSettingProvider = DavSettingProvider._();
+@ProviderFor(AppDAVSetting)
+final appDAVSettingProvider = AppDAVSettingProvider._();
 
-final class DavSettingProvider
-    extends $NotifierProvider<DavSetting, DAVProps?> {
-  DavSettingProvider._()
+final class AppDAVSettingProvider
+    extends $NotifierProvider<AppDAVSetting, DAV?> {
+  AppDAVSettingProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
-        name: r'davSettingProvider',
+        name: r'appDAVSettingProvider',
         isAutoDispose: true,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
 
   @override
-  String debugGetCreateSourceHash() => _$davSettingHash();
+  String debugGetCreateSourceHash() => _$appDAVSettingHash();
 
   @$internal
   @override
-  DavSetting create() => DavSetting();
+  AppDAVSetting create() => AppDAVSetting();
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(DAVProps? value) {
+  Override overrideWithValue(DAV? value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride: $SyncValueProvider<DAVProps?>(value),
+      providerOverride: $SyncValueProvider<DAV?>(value),
     );
   }
 }
 
-String _$davSettingHash() => r'5c85725b0d988c8f44ef6ba373953e551e09e857';
+String _$appDAVSettingHash() => r'4bf293ac0d1fba157f60df920b7ffd5afefaab26';
 
-abstract class _$DavSetting extends $Notifier<DAVProps?> {
-  DAVProps? build();
+abstract class _$AppDAVSetting extends $Notifier<DAV?> {
+  DAV? build();
   @$mustCallSuper
   @override
   WhenComplete runBuild() {
-    final ref = this.ref as $Ref<DAVProps?, DAVProps?>;
+    final ref = this.ref as $Ref<DAV?, DAV?>;
     final element =
         ref.element
             as $ClassProviderElement<
-              AnyNotifier<DAVProps?, DAVProps?>,
-              DAVProps?,
+              AnyNotifier<DAV?, DAV?>,
+              DAV?,
+              Object?,
+              Object?
+            >;
+    return element.handleCreate(ref, build);
+  }
+}
+
+@ProviderFor(OverrideDns)
+final overrideDnsProvider = OverrideDnsProvider._();
+
+final class OverrideDnsProvider extends $NotifierProvider<OverrideDns, bool> {
+  OverrideDnsProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'overrideDnsProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$overrideDnsHash();
+
+  @$internal
+  @override
+  OverrideDns create() => OverrideDns();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(bool value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<bool>(value),
+    );
+  }
+}
+
+String _$overrideDnsHash() => r'1fc914de471319bf1e003edf9627b8c646b641bf';
+
+abstract class _$OverrideDns extends $Notifier<bool> {
+  bool build();
+  @$mustCallSuper
+  @override
+  WhenComplete runBuild() {
+    final ref = this.ref as $Ref<bool, bool>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<bool, bool>,
+              bool,
+              Object?,
+              Object?
+            >;
+    return element.handleCreate(ref, build);
+  }
+}
+
+@ProviderFor(OverrideTestUrl)
+final overrideTestUrlProvider = OverrideTestUrlProvider._();
+
+final class OverrideTestUrlProvider
+    extends $NotifierProvider<OverrideTestUrl, bool> {
+  OverrideTestUrlProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'overrideTestUrlProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$overrideTestUrlHash();
+
+  @$internal
+  @override
+  OverrideTestUrl create() => OverrideTestUrl();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(bool value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<bool>(value),
+    );
+  }
+}
+
+String _$overrideTestUrlHash() => r'8a5a63f5abc3eee0293442891c92a5062c09206e';
+
+abstract class _$OverrideTestUrl extends $Notifier<bool> {
+  bool build();
+  @$mustCallSuper
+  @override
+  WhenComplete runBuild() {
+    final ref = this.ref as $Ref<bool, bool>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<bool, bool>,
+              bool,
+              Object?,
+              Object?
+            >;
+    return element.handleCreate(ref, build);
+  }
+}
+
+@ProviderFor(OverrideNtp)
+final overrideNtpProvider = OverrideNtpProvider._();
+
+final class OverrideNtpProvider extends $NotifierProvider<OverrideNtp, bool> {
+  OverrideNtpProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'overrideNtpProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$overrideNtpHash();
+
+  @$internal
+  @override
+  OverrideNtp create() => OverrideNtp();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(bool value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<bool>(value),
+    );
+  }
+}
+
+String _$overrideNtpHash() => r'da4620088529c14a7ceeeaffb1c528aa4202ea46';
+
+abstract class _$OverrideNtp extends $Notifier<bool> {
+  bool build();
+  @$mustCallSuper
+  @override
+  WhenComplete runBuild() {
+    final ref = this.ref as $Ref<bool, bool>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<bool, bool>,
+              bool,
+              Object?,
+              Object?
+            >;
+    return element.handleCreate(ref, build);
+  }
+}
+
+@ProviderFor(OverrideSniffer)
+final overrideSnifferProvider = OverrideSnifferProvider._();
+
+final class OverrideSnifferProvider
+    extends $NotifierProvider<OverrideSniffer, bool> {
+  OverrideSnifferProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'overrideSnifferProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$overrideSnifferHash();
+
+  @$internal
+  @override
+  OverrideSniffer create() => OverrideSniffer();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(bool value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<bool>(value),
+    );
+  }
+}
+
+String _$overrideSnifferHash() => r'c52e23041ec9b85e394bea22442d66a1c2c5e1bb';
+
+abstract class _$OverrideSniffer extends $Notifier<bool> {
+  bool build();
+  @$mustCallSuper
+  @override
+  WhenComplete runBuild() {
+    final ref = this.ref as $Ref<bool, bool>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<bool, bool>,
+              bool,
+              Object?,
+              Object?
+            >;
+    return element.handleCreate(ref, build);
+  }
+}
+
+@ProviderFor(OverrideTunnel)
+final overrideTunnelProvider = OverrideTunnelProvider._();
+
+final class OverrideTunnelProvider
+    extends $NotifierProvider<OverrideTunnel, bool> {
+  OverrideTunnelProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'overrideTunnelProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$overrideTunnelHash();
+
+  @$internal
+  @override
+  OverrideTunnel create() => OverrideTunnel();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(bool value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<bool>(value),
+    );
+  }
+}
+
+String _$overrideTunnelHash() => r'bef45c0504f3c2b831025b8b1ecca7bf0214f67a';
+
+abstract class _$OverrideTunnel extends $Notifier<bool> {
+  bool build();
+  @$mustCallSuper
+  @override
+  WhenComplete runBuild() {
+    final ref = this.ref as $Ref<bool, bool>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<bool, bool>,
+              bool,
+              Object?,
+              Object?
+            >;
+    return element.handleCreate(ref, build);
+  }
+}
+
+@ProviderFor(OverrideExperimental)
+final overrideExperimentalProvider = OverrideExperimentalProvider._();
+
+final class OverrideExperimentalProvider
+    extends $NotifierProvider<OverrideExperimental, bool> {
+  OverrideExperimentalProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'overrideExperimentalProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$overrideExperimentalHash();
+
+  @$internal
+  @override
+  OverrideExperimental create() => OverrideExperimental();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(bool value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<bool>(value),
+    );
+  }
+}
+
+String _$overrideExperimentalHash() =>
+    r'92073890c35d9993a7a038128a5945dff8cc6097';
+
+abstract class _$OverrideExperimental extends $Notifier<bool> {
+  bool build();
+  @$mustCallSuper
+  @override
+  WhenComplete runBuild() {
+    final ref = this.ref as $Ref<bool, bool>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<bool, bool>,
+              bool,
               Object?,
               Object?
             >;
@@ -404,7 +767,7 @@ final class HotKeyActionsProvider
   }
 }
 
-String _$hotKeyActionsHash() => r'5512b83196646a49fa7307282315d9dccc658dc8';
+String _$hotKeyActionsHash() => r'1d308d61b74accebbb11b1771a55975760503691';
 
 abstract class _$HotKeyActions extends $Notifier<List<HotKeyAction>> {
   List<HotKeyAction> build();
@@ -428,7 +791,7 @@ abstract class _$HotKeyActions extends $Notifier<List<HotKeyAction>> {
 final proxiesStyleSettingProvider = ProxiesStyleSettingProvider._();
 
 final class ProxiesStyleSettingProvider
-    extends $NotifierProvider<ProxiesStyleSetting, ProxiesStyleProps> {
+    extends $NotifierProvider<ProxiesStyleSetting, ProxiesStyle> {
   ProxiesStyleSettingProvider._()
     : super(
         from: null,
@@ -448,28 +811,28 @@ final class ProxiesStyleSettingProvider
   ProxiesStyleSetting create() => ProxiesStyleSetting();
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(ProxiesStyleProps value) {
+  Override overrideWithValue(ProxiesStyle value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride: $SyncValueProvider<ProxiesStyleProps>(value),
+      providerOverride: $SyncValueProvider<ProxiesStyle>(value),
     );
   }
 }
 
 String _$proxiesStyleSettingHash() =>
-    r'af5e94bbe4145170f8a8c4771830b115a89e8c3c';
+    r'54ebf20a8d4455b2d7a65824f375c4c02a5fba28';
 
-abstract class _$ProxiesStyleSetting extends $Notifier<ProxiesStyleProps> {
-  ProxiesStyleProps build();
+abstract class _$ProxiesStyleSetting extends $Notifier<ProxiesStyle> {
+  ProxiesStyle build();
   @$mustCallSuper
   @override
   WhenComplete runBuild() {
-    final ref = this.ref as $Ref<ProxiesStyleProps, ProxiesStyleProps>;
+    final ref = this.ref as $Ref<ProxiesStyle, ProxiesStyle>;
     final element =
         ref.element
             as $ClassProviderElement<
-              AnyNotifier<ProxiesStyleProps, ProxiesStyleProps>,
-              ProxiesStyleProps,
+              AnyNotifier<ProxiesStyle, ProxiesStyle>,
+              ProxiesStyle,
               Object?,
               Object?
             >;
@@ -477,12 +840,64 @@ abstract class _$ProxiesStyleSetting extends $Notifier<ProxiesStyleProps> {
   }
 }
 
-@ProviderFor(_PatchClashConfig)
-final patchClashConfigProvider = _PatchClashConfigProvider._();
+@ProviderFor(ScriptState)
+final scriptStateProvider = ScriptStateProvider._();
 
-final class _PatchClashConfigProvider
-    extends $NotifierProvider<_PatchClashConfig, PatchClashConfig> {
-  _PatchClashConfigProvider._()
+final class ScriptStateProvider
+    extends $NotifierProvider<ScriptState, ScriptProps> {
+  ScriptStateProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'scriptStateProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$scriptStateHash();
+
+  @$internal
+  @override
+  ScriptState create() => ScriptState();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(ScriptProps value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<ScriptProps>(value),
+    );
+  }
+}
+
+String _$scriptStateHash() => r'83560787d30773ddd76a4b279b149f190f94c756';
+
+abstract class _$ScriptState extends $Notifier<ScriptProps> {
+  ScriptProps build();
+  @$mustCallSuper
+  @override
+  WhenComplete runBuild() {
+    final ref = this.ref as $Ref<ScriptProps, ScriptProps>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<ScriptProps, ScriptProps>,
+              ScriptProps,
+              Object?,
+              Object?
+            >;
+    return element.handleCreate(ref, build);
+  }
+}
+
+@ProviderFor(PatchClashConfig)
+final patchClashConfigProvider = PatchClashConfigProvider._();
+
+final class PatchClashConfigProvider
+    extends $NotifierProvider<PatchClashConfig, ClashConfig> {
+  PatchClashConfigProvider._()
     : super(
         from: null,
         argument: null,
@@ -494,34 +909,34 @@ final class _PatchClashConfigProvider
       );
 
   @override
-  String debugGetCreateSourceHash() => _$_patchClashConfigHash();
+  String debugGetCreateSourceHash() => _$patchClashConfigHash();
 
   @$internal
   @override
-  _PatchClashConfig create() => _PatchClashConfig();
+  PatchClashConfig create() => PatchClashConfig();
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(PatchClashConfig value) {
+  Override overrideWithValue(ClashConfig value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride: $SyncValueProvider<PatchClashConfig>(value),
+      providerOverride: $SyncValueProvider<ClashConfig>(value),
     );
   }
 }
 
-String _$_patchClashConfigHash() => r'2a02c8f1ff5746c6c0b2248343bd729d4f2a5886';
+String _$patchClashConfigHash() => r'd9acdd0ace673fc1c1460b63d7a27c5787713c14';
 
-abstract class _$PatchClashConfig extends $Notifier<PatchClashConfig> {
-  PatchClashConfig build();
+abstract class _$PatchClashConfig extends $Notifier<ClashConfig> {
+  ClashConfig build();
   @$mustCallSuper
   @override
   WhenComplete runBuild() {
-    final ref = this.ref as $Ref<PatchClashConfig, PatchClashConfig>;
+    final ref = this.ref as $Ref<ClashConfig, ClashConfig>;
     final element =
         ref.element
             as $ClassProviderElement<
-              AnyNotifier<PatchClashConfig, PatchClashConfig>,
-              PatchClashConfig,
+              AnyNotifier<ClashConfig, ClashConfig>,
+              ClashConfig,
               Object?,
               Object?
             >;
@@ -529,51 +944,51 @@ abstract class _$PatchClashConfig extends $Notifier<PatchClashConfig> {
   }
 }
 
-@ProviderFor(ExcludeSSIDs)
-final excludeSSIDsProvider = ExcludeSSIDsProvider._();
+@ProviderFor(NodeExcludeFilter)
+final nodeExcludeFilterProvider = NodeExcludeFilterProvider._();
 
-final class ExcludeSSIDsProvider
-    extends $NotifierProvider<ExcludeSSIDs, List<String>> {
-  ExcludeSSIDsProvider._()
+final class NodeExcludeFilterProvider
+    extends $NotifierProvider<NodeExcludeFilter, String> {
+  NodeExcludeFilterProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
-        name: r'excludeSSIDsProvider',
+        name: r'nodeExcludeFilterProvider',
         isAutoDispose: true,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
 
   @override
-  String debugGetCreateSourceHash() => _$excludeSSIDsHash();
+  String debugGetCreateSourceHash() => _$nodeExcludeFilterHash();
 
   @$internal
   @override
-  ExcludeSSIDs create() => ExcludeSSIDs();
+  NodeExcludeFilter create() => NodeExcludeFilter();
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(List<String> value) {
+  Override overrideWithValue(String value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride: $SyncValueProvider<List<String>>(value),
+      providerOverride: $SyncValueProvider<String>(value),
     );
   }
 }
 
-String _$excludeSSIDsHash() => r'a67805c76b58d19da1656783f4514111d6bf4e35';
+String _$nodeExcludeFilterHash() => r'5fc26cba4cd5c9dfdb57fcd4eb4bf59d39abafc3';
 
-abstract class _$ExcludeSSIDs extends $Notifier<List<String>> {
-  List<String> build();
+abstract class _$NodeExcludeFilter extends $Notifier<String> {
+  String build();
   @$mustCallSuper
   @override
   WhenComplete runBuild() {
-    final ref = this.ref as $Ref<List<String>, List<String>>;
+    final ref = this.ref as $Ref<String, String>;
     final element =
         ref.element
             as $ClassProviderElement<
-              AnyNotifier<List<String>, List<String>>,
-              List<String>,
+              AnyNotifier<String, String>,
+              String,
               Object?,
               Object?
             >;
@@ -581,42 +996,55 @@ abstract class _$ExcludeSSIDs extends $Notifier<List<String>> {
   }
 }
 
-@ProviderFor(_config)
-final configProvider = _ConfigProvider._();
+@ProviderFor(HealthCheckTimeout)
+final healthCheckTimeoutProvider = HealthCheckTimeoutProvider._();
 
-final class _ConfigProvider extends $FunctionalProvider<Config, Config, Config>
-    with $Provider<Config> {
-  _ConfigProvider._()
+final class HealthCheckTimeoutProvider
+    extends $NotifierProvider<HealthCheckTimeout, int> {
+  HealthCheckTimeoutProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
-        name: r'configProvider',
+        name: r'healthCheckTimeoutProvider',
         isAutoDispose: true,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
 
   @override
-  String debugGetCreateSourceHash() => _$_configHash();
+  String debugGetCreateSourceHash() => _$healthCheckTimeoutHash();
 
   @$internal
   @override
-  $ProviderElement<Config> $createElement($ProviderPointer pointer) =>
-      $ProviderElement(pointer);
-
-  @override
-  Config create(Ref ref) {
-    return _config(ref);
-  }
+  HealthCheckTimeout create() => HealthCheckTimeout();
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(Config value) {
+  Override overrideWithValue(int value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride: $SyncValueProvider<Config>(value),
+      providerOverride: $SyncValueProvider<int>(value),
     );
   }
 }
 
-String _$_configHash() => r'a9e717216fc1ca6b3526907bd578c4982bb6961a';
+String _$healthCheckTimeoutHash() =>
+    r'5d0b9e74e17b4304b5bc724b6823df870449d627';
+
+abstract class _$HealthCheckTimeout extends $Notifier<int> {
+  int build();
+  @$mustCallSuper
+  @override
+  WhenComplete runBuild() {
+    final ref = this.ref as $Ref<int, int>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<int, int>,
+              int,
+              Object?,
+              Object?
+            >;
+    return element.handleCreate(ref, build);
+  }
+}

@@ -295,7 +295,7 @@ as int,
 /// @nodoc
 mixin _$Profile {
 
- int get id; ProfileType get type; String get label; String? get currentGroupName; String get url; String get ageSecretKey; DateTime? get lastUpdateDate; Duration get autoUpdateDuration; SubscriptionInfo? get subscriptionInfo; bool get autoUpdate; Map<String, String> get selectedMap; Set<String> get unfoldSet; ExtendType get extendType; int? get scriptId; String? get matchTarget; int? get order;@JsonKey(fromJson: ProfileOverrides.safeFromJson) ProfileOverrides get overrides;
+ String get id; String? get label; String? get currentGroupName; String get url; DateTime? get lastUpdateDate; Duration get autoUpdateDuration; SubscriptionInfo? get subscriptionInfo; bool get autoUpdate; SelectedMap get selectedMap; Set<String> get unfoldSet; OverrideData get overrideData;@JsonKey(includeToJson: false, includeFromJson: false) bool get isUpdating; bool get useScriptOverride; String? get ageSecretKey;@JsonKey(name: 'group-switches') Map<String, bool> get groupSwitches;
 /// Create a copy of Profile
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -309,20 +309,20 @@ $ProfileCopyWith<Profile> get copyWith => _$ProfileCopyWithImpl<Profile>(this as
 @override
 bool operator ==(Object other) {
   final _this = this as Profile;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Profile&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.type, _this.type) || other.type == _this.type)&&(identical(other.label, _this.label) || other.label == _this.label)&&(identical(other.currentGroupName, _this.currentGroupName) || other.currentGroupName == _this.currentGroupName)&&(identical(other.url, _this.url) || other.url == _this.url)&&(identical(other.ageSecretKey, _this.ageSecretKey) || other.ageSecretKey == _this.ageSecretKey)&&(identical(other.lastUpdateDate, _this.lastUpdateDate) || other.lastUpdateDate == _this.lastUpdateDate)&&(identical(other.autoUpdateDuration, _this.autoUpdateDuration) || other.autoUpdateDuration == _this.autoUpdateDuration)&&(identical(other.subscriptionInfo, _this.subscriptionInfo) || other.subscriptionInfo == _this.subscriptionInfo)&&(identical(other.autoUpdate, _this.autoUpdate) || other.autoUpdate == _this.autoUpdate)&&const DeepCollectionEquality().equals(other.selectedMap, _this.selectedMap)&&const DeepCollectionEquality().equals(other.unfoldSet, _this.unfoldSet)&&(identical(other.extendType, _this.extendType) || other.extendType == _this.extendType)&&(identical(other.scriptId, _this.scriptId) || other.scriptId == _this.scriptId)&&(identical(other.matchTarget, _this.matchTarget) || other.matchTarget == _this.matchTarget)&&(identical(other.order, _this.order) || other.order == _this.order)&&(identical(other.overrides, _this.overrides) || other.overrides == _this.overrides));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Profile&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.label, _this.label) || other.label == _this.label)&&(identical(other.currentGroupName, _this.currentGroupName) || other.currentGroupName == _this.currentGroupName)&&(identical(other.url, _this.url) || other.url == _this.url)&&(identical(other.lastUpdateDate, _this.lastUpdateDate) || other.lastUpdateDate == _this.lastUpdateDate)&&(identical(other.autoUpdateDuration, _this.autoUpdateDuration) || other.autoUpdateDuration == _this.autoUpdateDuration)&&(identical(other.subscriptionInfo, _this.subscriptionInfo) || other.subscriptionInfo == _this.subscriptionInfo)&&(identical(other.autoUpdate, _this.autoUpdate) || other.autoUpdate == _this.autoUpdate)&&const DeepCollectionEquality().equals(other.selectedMap, _this.selectedMap)&&const DeepCollectionEquality().equals(other.unfoldSet, _this.unfoldSet)&&(identical(other.overrideData, _this.overrideData) || other.overrideData == _this.overrideData)&&(identical(other.isUpdating, _this.isUpdating) || other.isUpdating == _this.isUpdating)&&(identical(other.useScriptOverride, _this.useScriptOverride) || other.useScriptOverride == _this.useScriptOverride)&&(identical(other.ageSecretKey, _this.ageSecretKey) || other.ageSecretKey == _this.ageSecretKey)&&const DeepCollectionEquality().equals(other.groupSwitches, _this.groupSwitches));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as Profile;
-  return Object.hash(runtimeType,_this.id,_this.type,_this.label,_this.currentGroupName,_this.url,_this.ageSecretKey,_this.lastUpdateDate,_this.autoUpdateDuration,_this.subscriptionInfo,_this.autoUpdate,const DeepCollectionEquality().hash(_this.selectedMap),const DeepCollectionEquality().hash(_this.unfoldSet),_this.extendType,_this.scriptId,_this.matchTarget,_this.order,_this.overrides);
+  return Object.hash(runtimeType,_this.id,_this.label,_this.currentGroupName,_this.url,_this.lastUpdateDate,_this.autoUpdateDuration,_this.subscriptionInfo,_this.autoUpdate,const DeepCollectionEquality().hash(_this.selectedMap),const DeepCollectionEquality().hash(_this.unfoldSet),_this.overrideData,_this.isUpdating,_this.useScriptOverride,_this.ageSecretKey,const DeepCollectionEquality().hash(_this.groupSwitches));
 }
 
 @override
 String toString() {
   final _this = this as Profile;
-  return 'Profile(id: ${_this.id}, type: ${_this.type}, label: ${_this.label}, currentGroupName: ${_this.currentGroupName}, url: ${_this.url}, ageSecretKey: ${_this.ageSecretKey}, lastUpdateDate: ${_this.lastUpdateDate}, autoUpdateDuration: ${_this.autoUpdateDuration}, subscriptionInfo: ${_this.subscriptionInfo}, autoUpdate: ${_this.autoUpdate}, selectedMap: ${_this.selectedMap}, unfoldSet: ${_this.unfoldSet}, extendType: ${_this.extendType}, scriptId: ${_this.scriptId}, matchTarget: ${_this.matchTarget}, order: ${_this.order}, overrides: ${_this.overrides})';
+  return 'Profile(id: ${_this.id}, label: ${_this.label}, currentGroupName: ${_this.currentGroupName}, url: ${_this.url}, lastUpdateDate: ${_this.lastUpdateDate}, autoUpdateDuration: ${_this.autoUpdateDuration}, subscriptionInfo: ${_this.subscriptionInfo}, autoUpdate: ${_this.autoUpdate}, selectedMap: ${_this.selectedMap}, unfoldSet: ${_this.unfoldSet}, overrideData: ${_this.overrideData}, isUpdating: ${_this.isUpdating}, useScriptOverride: ${_this.useScriptOverride}, ageSecretKey: ${_this.ageSecretKey}, groupSwitches: ${_this.groupSwitches})';
 }
 
 
@@ -333,11 +333,11 @@ abstract mixin class $ProfileCopyWith<$Res>  {
   factory $ProfileCopyWith(Profile value, $Res Function(Profile) _then) = _$ProfileCopyWithImpl;
 @useResult
 $Res call({
- int id, ProfileType type, String label, String? currentGroupName, String url, String ageSecretKey, DateTime? lastUpdateDate, Duration autoUpdateDuration, SubscriptionInfo? subscriptionInfo, bool autoUpdate, Map<String, String> selectedMap, Set<String> unfoldSet, ExtendType extendType, int? scriptId, String? matchTarget, int? order,@JsonKey(fromJson: ProfileOverrides.safeFromJson) ProfileOverrides overrides
+ String id, String? label, String? currentGroupName, String url, DateTime? lastUpdateDate, Duration autoUpdateDuration, SubscriptionInfo? subscriptionInfo, bool autoUpdate, SelectedMap selectedMap, Set<String> unfoldSet, OverrideData overrideData,@JsonKey(includeToJson: false, includeFromJson: false) bool isUpdating, bool useScriptOverride, String? ageSecretKey,@JsonKey(name: 'group-switches') Map<String, bool> groupSwitches
 });
 
 
-$SubscriptionInfoCopyWith<$Res>? get subscriptionInfo;$ProfileOverridesCopyWith<$Res> get overrides;
+$SubscriptionInfoCopyWith<$Res>? get subscriptionInfo;$OverrideDataCopyWith<$Res> get overrideData;
 
 }
 /// @nodoc
@@ -350,26 +350,24 @@ class _$ProfileCopyWithImpl<$Res>
 
 /// Create a copy of Profile
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? type = null,Object? label = null,Object? currentGroupName = freezed,Object? url = null,Object? ageSecretKey = null,Object? lastUpdateDate = freezed,Object? autoUpdateDuration = null,Object? subscriptionInfo = freezed,Object? autoUpdate = null,Object? selectedMap = null,Object? unfoldSet = null,Object? extendType = null,Object? scriptId = freezed,Object? matchTarget = freezed,Object? order = freezed,Object? overrides = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? label = freezed,Object? currentGroupName = freezed,Object? url = null,Object? lastUpdateDate = freezed,Object? autoUpdateDuration = null,Object? subscriptionInfo = freezed,Object? autoUpdate = null,Object? selectedMap = null,Object? unfoldSet = null,Object? overrideData = null,Object? isUpdating = null,Object? useScriptOverride = null,Object? ageSecretKey = freezed,Object? groupSwitches = null,}) {
   return _then(Profile(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
-as int,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
-as ProfileType,label: null == label ? _self.label : label // ignore: cast_nullable_to_non_nullable
-as String,currentGroupName: freezed == currentGroupName ? _self.currentGroupName : currentGroupName // ignore: cast_nullable_to_non_nullable
+as String,label: freezed == label ? _self.label : label // ignore: cast_nullable_to_non_nullable
+as String?,currentGroupName: freezed == currentGroupName ? _self.currentGroupName : currentGroupName // ignore: cast_nullable_to_non_nullable
 as String?,url: null == url ? _self.url : url // ignore: cast_nullable_to_non_nullable
-as String,ageSecretKey: null == ageSecretKey ? _self.ageSecretKey : ageSecretKey // ignore: cast_nullable_to_non_nullable
 as String,lastUpdateDate: freezed == lastUpdateDate ? _self.lastUpdateDate : lastUpdateDate // ignore: cast_nullable_to_non_nullable
 as DateTime?,autoUpdateDuration: null == autoUpdateDuration ? _self.autoUpdateDuration : autoUpdateDuration // ignore: cast_nullable_to_non_nullable
 as Duration,subscriptionInfo: freezed == subscriptionInfo ? _self.subscriptionInfo : subscriptionInfo // ignore: cast_nullable_to_non_nullable
 as SubscriptionInfo?,autoUpdate: null == autoUpdate ? _self.autoUpdate : autoUpdate // ignore: cast_nullable_to_non_nullable
 as bool,selectedMap: null == selectedMap ? _self.selectedMap : selectedMap // ignore: cast_nullable_to_non_nullable
-as Map<String, String>,unfoldSet: null == unfoldSet ? _self.unfoldSet : unfoldSet // ignore: cast_nullable_to_non_nullable
-as Set<String>,extendType: null == extendType ? _self.extendType : extendType // ignore: cast_nullable_to_non_nullable
-as ExtendType,scriptId: freezed == scriptId ? _self.scriptId : scriptId // ignore: cast_nullable_to_non_nullable
-as int?,matchTarget: freezed == matchTarget ? _self.matchTarget : matchTarget // ignore: cast_nullable_to_non_nullable
-as String?,order: freezed == order ? _self.order : order // ignore: cast_nullable_to_non_nullable
-as int?,overrides: null == overrides ? _self.overrides : overrides // ignore: cast_nullable_to_non_nullable
-as ProfileOverrides,
+as SelectedMap,unfoldSet: null == unfoldSet ? _self.unfoldSet : unfoldSet // ignore: cast_nullable_to_non_nullable
+as Set<String>,overrideData: null == overrideData ? _self.overrideData : overrideData // ignore: cast_nullable_to_non_nullable
+as OverrideData,isUpdating: null == isUpdating ? _self.isUpdating : isUpdating // ignore: cast_nullable_to_non_nullable
+as bool,useScriptOverride: null == useScriptOverride ? _self.useScriptOverride : useScriptOverride // ignore: cast_nullable_to_non_nullable
+as bool,ageSecretKey: freezed == ageSecretKey ? _self.ageSecretKey : ageSecretKey // ignore: cast_nullable_to_non_nullable
+as String?,groupSwitches: null == groupSwitches ? _self.groupSwitches : groupSwitches // ignore: cast_nullable_to_non_nullable
+as Map<String, bool>,
   ));
 }
 /// Create a copy of Profile
@@ -388,10 +386,10 @@ $SubscriptionInfoCopyWith<$Res>? get subscriptionInfo {
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
-$ProfileOverridesCopyWith<$Res> get overrides {
+$OverrideDataCopyWith<$Res> get overrideData {
   
-  return $ProfileOverridesCopyWith<$Res>(_self.overrides, (value) {
-    return _then(_self.copyWith(overrides: value));
+  return $OverrideDataCopyWith<$Res>(_self.overrideData, (value) {
+    return _then(_self.copyWith(overrideData: value));
   });
 }
 }
@@ -475,10 +473,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  ProfileType type,  String label,  String? currentGroupName,  String url,  String ageSecretKey,  DateTime? lastUpdateDate,  Duration autoUpdateDuration,  SubscriptionInfo? subscriptionInfo,  bool autoUpdate,  Map<String, String> selectedMap,  Set<String> unfoldSet,  ExtendType extendType,  int? scriptId,  String? matchTarget,  int? order, @JsonKey(fromJson: ProfileOverrides.safeFromJson)  ProfileOverrides overrides)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String? label,  String? currentGroupName,  String url,  DateTime? lastUpdateDate,  Duration autoUpdateDuration,  SubscriptionInfo? subscriptionInfo,  bool autoUpdate,  SelectedMap selectedMap,  Set<String> unfoldSet,  OverrideData overrideData, @JsonKey(includeToJson: false, includeFromJson: false)  bool isUpdating,  bool useScriptOverride,  String? ageSecretKey, @JsonKey(name: 'group-switches')  Map<String, bool> groupSwitches)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Profile() when $default != null:
-return $default(_that.id,_that.type,_that.label,_that.currentGroupName,_that.url,_that.ageSecretKey,_that.lastUpdateDate,_that.autoUpdateDuration,_that.subscriptionInfo,_that.autoUpdate,_that.selectedMap,_that.unfoldSet,_that.extendType,_that.scriptId,_that.matchTarget,_that.order,_that.overrides);case _:
+return $default(_that.id,_that.label,_that.currentGroupName,_that.url,_that.lastUpdateDate,_that.autoUpdateDuration,_that.subscriptionInfo,_that.autoUpdate,_that.selectedMap,_that.unfoldSet,_that.overrideData,_that.isUpdating,_that.useScriptOverride,_that.ageSecretKey,_that.groupSwitches);case _:
   return orElse();
 
 }
@@ -496,10 +494,10 @@ return $default(_that.id,_that.type,_that.label,_that.currentGroupName,_that.url
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  ProfileType type,  String label,  String? currentGroupName,  String url,  String ageSecretKey,  DateTime? lastUpdateDate,  Duration autoUpdateDuration,  SubscriptionInfo? subscriptionInfo,  bool autoUpdate,  Map<String, String> selectedMap,  Set<String> unfoldSet,  ExtendType extendType,  int? scriptId,  String? matchTarget,  int? order, @JsonKey(fromJson: ProfileOverrides.safeFromJson)  ProfileOverrides overrides)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String? label,  String? currentGroupName,  String url,  DateTime? lastUpdateDate,  Duration autoUpdateDuration,  SubscriptionInfo? subscriptionInfo,  bool autoUpdate,  SelectedMap selectedMap,  Set<String> unfoldSet,  OverrideData overrideData, @JsonKey(includeToJson: false, includeFromJson: false)  bool isUpdating,  bool useScriptOverride,  String? ageSecretKey, @JsonKey(name: 'group-switches')  Map<String, bool> groupSwitches)  $default,) {final _that = this;
 switch (_that) {
 case _Profile():
-return $default(_that.id,_that.type,_that.label,_that.currentGroupName,_that.url,_that.ageSecretKey,_that.lastUpdateDate,_that.autoUpdateDuration,_that.subscriptionInfo,_that.autoUpdate,_that.selectedMap,_that.unfoldSet,_that.extendType,_that.scriptId,_that.matchTarget,_that.order,_that.overrides);case _:
+return $default(_that.id,_that.label,_that.currentGroupName,_that.url,_that.lastUpdateDate,_that.autoUpdateDuration,_that.subscriptionInfo,_that.autoUpdate,_that.selectedMap,_that.unfoldSet,_that.overrideData,_that.isUpdating,_that.useScriptOverride,_that.ageSecretKey,_that.groupSwitches);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -516,10 +514,10 @@ return $default(_that.id,_that.type,_that.label,_that.currentGroupName,_that.url
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  ProfileType type,  String label,  String? currentGroupName,  String url,  String ageSecretKey,  DateTime? lastUpdateDate,  Duration autoUpdateDuration,  SubscriptionInfo? subscriptionInfo,  bool autoUpdate,  Map<String, String> selectedMap,  Set<String> unfoldSet,  ExtendType extendType,  int? scriptId,  String? matchTarget,  int? order, @JsonKey(fromJson: ProfileOverrides.safeFromJson)  ProfileOverrides overrides)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String? label,  String? currentGroupName,  String url,  DateTime? lastUpdateDate,  Duration autoUpdateDuration,  SubscriptionInfo? subscriptionInfo,  bool autoUpdate,  SelectedMap selectedMap,  Set<String> unfoldSet,  OverrideData overrideData, @JsonKey(includeToJson: false, includeFromJson: false)  bool isUpdating,  bool useScriptOverride,  String? ageSecretKey, @JsonKey(name: 'group-switches')  Map<String, bool> groupSwitches)?  $default,) {final _that = this;
 switch (_that) {
 case _Profile() when $default != null:
-return $default(_that.id,_that.type,_that.label,_that.currentGroupName,_that.url,_that.ageSecretKey,_that.lastUpdateDate,_that.autoUpdateDuration,_that.subscriptionInfo,_that.autoUpdate,_that.selectedMap,_that.unfoldSet,_that.extendType,_that.scriptId,_that.matchTarget,_that.order,_that.overrides);case _:
+return $default(_that.id,_that.label,_that.currentGroupName,_that.url,_that.lastUpdateDate,_that.autoUpdateDuration,_that.subscriptionInfo,_that.autoUpdate,_that.selectedMap,_that.unfoldSet,_that.overrideData,_that.isUpdating,_that.useScriptOverride,_that.ageSecretKey,_that.groupSwitches);case _:
   return null;
 
 }
@@ -531,21 +529,19 @@ return $default(_that.id,_that.type,_that.label,_that.currentGroupName,_that.url
 @JsonSerializable()
 
 class _Profile implements Profile {
-  const _Profile({required this.id, this.type = ProfileType.file, this.label = '', this.currentGroupName, this.url = '', this.ageSecretKey = '', this.lastUpdateDate, required this.autoUpdateDuration, this.subscriptionInfo, this.autoUpdate = true,  Map<String, String> selectedMap = const {},  Set<String> unfoldSet = const {}, this.extendType = ExtendType.standard, this.scriptId, this.matchTarget, this.order, @JsonKey(fromJson: ProfileOverrides.safeFromJson) this.overrides = const ProfileOverrides()}): _selectedMap = selectedMap,_unfoldSet = unfoldSet;
+  const _Profile({required this.id, this.label, this.currentGroupName, this.url = '', this.lastUpdateDate, required this.autoUpdateDuration, this.subscriptionInfo, this.autoUpdate = true,  SelectedMap selectedMap = const {},  Set<String> unfoldSet = const {}, this.overrideData = const OverrideData(), @JsonKey(includeToJson: false, includeFromJson: false) this.isUpdating = false, this.useScriptOverride = true, this.ageSecretKey, @JsonKey(name: 'group-switches')  Map<String, bool> groupSwitches = const {}}): _selectedMap = selectedMap,_unfoldSet = unfoldSet,_groupSwitches = groupSwitches;
   factory _Profile.fromJson(Map<String, dynamic> json) => _$ProfileFromJson(json);
 
-@override final  int id;
-@override@JsonKey() final  ProfileType type;
-@override@JsonKey() final  String label;
+@override final  String id;
+@override final  String? label;
 @override final  String? currentGroupName;
 @override@JsonKey() final  String url;
-@override@JsonKey() final  String ageSecretKey;
 @override final  DateTime? lastUpdateDate;
 @override final  Duration autoUpdateDuration;
 @override final  SubscriptionInfo? subscriptionInfo;
 @override@JsonKey() final  bool autoUpdate;
- final  Map<String, String> _selectedMap;
-@override@JsonKey() Map<String, String> get selectedMap {
+ final  SelectedMap _selectedMap;
+@override@JsonKey() SelectedMap get selectedMap {
   if (_selectedMap is EqualUnmodifiableMapView) return _selectedMap;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableMapView(_selectedMap);
@@ -558,11 +554,17 @@ class _Profile implements Profile {
   return EqualUnmodifiableSetView(_unfoldSet);
 }
 
-@override@JsonKey() final  ExtendType extendType;
-@override final  int? scriptId;
-@override final  String? matchTarget;
-@override final  int? order;
-@override@JsonKey(fromJson: ProfileOverrides.safeFromJson) final  ProfileOverrides overrides;
+@override@JsonKey() final  OverrideData overrideData;
+@override@JsonKey(includeToJson: false, includeFromJson: false) final  bool isUpdating;
+@override@JsonKey() final  bool useScriptOverride;
+@override final  String? ageSecretKey;
+ final  Map<String, bool> _groupSwitches;
+@override@JsonKey(name: 'group-switches') Map<String, bool> get groupSwitches {
+  if (_groupSwitches is EqualUnmodifiableMapView) return _groupSwitches;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableMapView(_groupSwitches);
+}
+
 
 /// Create a copy of Profile
 /// with the given fields replaced by the non-null parameter values.
@@ -577,18 +579,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _Profile&&(identical(other.id, id) || other.id == id)&&(identical(other.type, type) || other.type == type)&&(identical(other.label, label) || other.label == label)&&(identical(other.currentGroupName, currentGroupName) || other.currentGroupName == currentGroupName)&&(identical(other.url, url) || other.url == url)&&(identical(other.ageSecretKey, ageSecretKey) || other.ageSecretKey == ageSecretKey)&&(identical(other.lastUpdateDate, lastUpdateDate) || other.lastUpdateDate == lastUpdateDate)&&(identical(other.autoUpdateDuration, autoUpdateDuration) || other.autoUpdateDuration == autoUpdateDuration)&&(identical(other.subscriptionInfo, subscriptionInfo) || other.subscriptionInfo == subscriptionInfo)&&(identical(other.autoUpdate, autoUpdate) || other.autoUpdate == autoUpdate)&&const DeepCollectionEquality().equals(other.selectedMap, _selectedMap)&&const DeepCollectionEquality().equals(other.unfoldSet, _unfoldSet)&&(identical(other.extendType, extendType) || other.extendType == extendType)&&(identical(other.scriptId, scriptId) || other.scriptId == scriptId)&&(identical(other.matchTarget, matchTarget) || other.matchTarget == matchTarget)&&(identical(other.order, order) || other.order == order)&&(identical(other.overrides, overrides) || other.overrides == overrides));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _Profile&&(identical(other.id, id) || other.id == id)&&(identical(other.label, label) || other.label == label)&&(identical(other.currentGroupName, currentGroupName) || other.currentGroupName == currentGroupName)&&(identical(other.url, url) || other.url == url)&&(identical(other.lastUpdateDate, lastUpdateDate) || other.lastUpdateDate == lastUpdateDate)&&(identical(other.autoUpdateDuration, autoUpdateDuration) || other.autoUpdateDuration == autoUpdateDuration)&&(identical(other.subscriptionInfo, subscriptionInfo) || other.subscriptionInfo == subscriptionInfo)&&(identical(other.autoUpdate, autoUpdate) || other.autoUpdate == autoUpdate)&&const DeepCollectionEquality().equals(other.selectedMap, _selectedMap)&&const DeepCollectionEquality().equals(other.unfoldSet, _unfoldSet)&&(identical(other.overrideData, overrideData) || other.overrideData == overrideData)&&(identical(other.isUpdating, isUpdating) || other.isUpdating == isUpdating)&&(identical(other.useScriptOverride, useScriptOverride) || other.useScriptOverride == useScriptOverride)&&(identical(other.ageSecretKey, ageSecretKey) || other.ageSecretKey == ageSecretKey)&&const DeepCollectionEquality().equals(other.groupSwitches, _groupSwitches));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,id,type,label,currentGroupName,url,ageSecretKey,lastUpdateDate,autoUpdateDuration,subscriptionInfo,autoUpdate,const DeepCollectionEquality().hash(_selectedMap),const DeepCollectionEquality().hash(_unfoldSet),extendType,scriptId,matchTarget,order,overrides);
+    return Object.hash(runtimeType,id,label,currentGroupName,url,lastUpdateDate,autoUpdateDuration,subscriptionInfo,autoUpdate,const DeepCollectionEquality().hash(_selectedMap),const DeepCollectionEquality().hash(_unfoldSet),overrideData,isUpdating,useScriptOverride,ageSecretKey,const DeepCollectionEquality().hash(_groupSwitches));
 }
 
 @override
 String toString() {
-    return 'Profile(id: $id, type: $type, label: $label, currentGroupName: $currentGroupName, url: $url, ageSecretKey: $ageSecretKey, lastUpdateDate: $lastUpdateDate, autoUpdateDuration: $autoUpdateDuration, subscriptionInfo: $subscriptionInfo, autoUpdate: $autoUpdate, selectedMap: $selectedMap, unfoldSet: $unfoldSet, extendType: $extendType, scriptId: $scriptId, matchTarget: $matchTarget, order: $order, overrides: $overrides)';
+    return 'Profile(id: $id, label: $label, currentGroupName: $currentGroupName, url: $url, lastUpdateDate: $lastUpdateDate, autoUpdateDuration: $autoUpdateDuration, subscriptionInfo: $subscriptionInfo, autoUpdate: $autoUpdate, selectedMap: $selectedMap, unfoldSet: $unfoldSet, overrideData: $overrideData, isUpdating: $isUpdating, useScriptOverride: $useScriptOverride, ageSecretKey: $ageSecretKey, groupSwitches: $groupSwitches)';
 }
 
 
@@ -599,11 +601,11 @@ abstract mixin class _$ProfileCopyWith<$Res> implements $ProfileCopyWith<$Res> {
   factory _$ProfileCopyWith(_Profile value, $Res Function(_Profile) _then) = __$ProfileCopyWithImpl;
 @override @useResult
 $Res call({
- int id, ProfileType type, String label, String? currentGroupName, String url, String ageSecretKey, DateTime? lastUpdateDate, Duration autoUpdateDuration, SubscriptionInfo? subscriptionInfo, bool autoUpdate, Map<String, String> selectedMap, Set<String> unfoldSet, ExtendType extendType, int? scriptId, String? matchTarget, int? order,@JsonKey(fromJson: ProfileOverrides.safeFromJson) ProfileOverrides overrides
+ String id, String? label, String? currentGroupName, String url, DateTime? lastUpdateDate, Duration autoUpdateDuration, SubscriptionInfo? subscriptionInfo, bool autoUpdate, SelectedMap selectedMap, Set<String> unfoldSet, OverrideData overrideData,@JsonKey(includeToJson: false, includeFromJson: false) bool isUpdating, bool useScriptOverride, String? ageSecretKey,@JsonKey(name: 'group-switches') Map<String, bool> groupSwitches
 });
 
 
-@override $SubscriptionInfoCopyWith<$Res>? get subscriptionInfo;@override $ProfileOverridesCopyWith<$Res> get overrides;
+@override $SubscriptionInfoCopyWith<$Res>? get subscriptionInfo;@override $OverrideDataCopyWith<$Res> get overrideData;
 
 }
 /// @nodoc
@@ -616,26 +618,24 @@ class __$ProfileCopyWithImpl<$Res>
 
 /// Create a copy of Profile
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? type = null,Object? label = null,Object? currentGroupName = freezed,Object? url = null,Object? ageSecretKey = null,Object? lastUpdateDate = freezed,Object? autoUpdateDuration = null,Object? subscriptionInfo = freezed,Object? autoUpdate = null,Object? selectedMap = null,Object? unfoldSet = null,Object? extendType = null,Object? scriptId = freezed,Object? matchTarget = freezed,Object? order = freezed,Object? overrides = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? label = freezed,Object? currentGroupName = freezed,Object? url = null,Object? lastUpdateDate = freezed,Object? autoUpdateDuration = null,Object? subscriptionInfo = freezed,Object? autoUpdate = null,Object? selectedMap = null,Object? unfoldSet = null,Object? overrideData = null,Object? isUpdating = null,Object? useScriptOverride = null,Object? ageSecretKey = freezed,Object? groupSwitches = null,}) {
   return _then(_Profile(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
-as int,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
-as ProfileType,label: null == label ? _self.label : label // ignore: cast_nullable_to_non_nullable
-as String,currentGroupName: freezed == currentGroupName ? _self.currentGroupName : currentGroupName // ignore: cast_nullable_to_non_nullable
+as String,label: freezed == label ? _self.label : label // ignore: cast_nullable_to_non_nullable
+as String?,currentGroupName: freezed == currentGroupName ? _self.currentGroupName : currentGroupName // ignore: cast_nullable_to_non_nullable
 as String?,url: null == url ? _self.url : url // ignore: cast_nullable_to_non_nullable
-as String,ageSecretKey: null == ageSecretKey ? _self.ageSecretKey : ageSecretKey // ignore: cast_nullable_to_non_nullable
 as String,lastUpdateDate: freezed == lastUpdateDate ? _self.lastUpdateDate : lastUpdateDate // ignore: cast_nullable_to_non_nullable
 as DateTime?,autoUpdateDuration: null == autoUpdateDuration ? _self.autoUpdateDuration : autoUpdateDuration // ignore: cast_nullable_to_non_nullable
 as Duration,subscriptionInfo: freezed == subscriptionInfo ? _self.subscriptionInfo : subscriptionInfo // ignore: cast_nullable_to_non_nullable
 as SubscriptionInfo?,autoUpdate: null == autoUpdate ? _self.autoUpdate : autoUpdate // ignore: cast_nullable_to_non_nullable
 as bool,selectedMap: null == selectedMap ? _self._selectedMap : selectedMap // ignore: cast_nullable_to_non_nullable
-as Map<String, String>,unfoldSet: null == unfoldSet ? _self._unfoldSet : unfoldSet // ignore: cast_nullable_to_non_nullable
-as Set<String>,extendType: null == extendType ? _self.extendType : extendType // ignore: cast_nullable_to_non_nullable
-as ExtendType,scriptId: freezed == scriptId ? _self.scriptId : scriptId // ignore: cast_nullable_to_non_nullable
-as int?,matchTarget: freezed == matchTarget ? _self.matchTarget : matchTarget // ignore: cast_nullable_to_non_nullable
-as String?,order: freezed == order ? _self.order : order // ignore: cast_nullable_to_non_nullable
-as int?,overrides: null == overrides ? _self.overrides : overrides // ignore: cast_nullable_to_non_nullable
-as ProfileOverrides,
+as SelectedMap,unfoldSet: null == unfoldSet ? _self._unfoldSet : unfoldSet // ignore: cast_nullable_to_non_nullable
+as Set<String>,overrideData: null == overrideData ? _self.overrideData : overrideData // ignore: cast_nullable_to_non_nullable
+as OverrideData,isUpdating: null == isUpdating ? _self.isUpdating : isUpdating // ignore: cast_nullable_to_non_nullable
+as bool,useScriptOverride: null == useScriptOverride ? _self.useScriptOverride : useScriptOverride // ignore: cast_nullable_to_non_nullable
+as bool,ageSecretKey: freezed == ageSecretKey ? _self.ageSecretKey : ageSecretKey // ignore: cast_nullable_to_non_nullable
+as String?,groupSwitches: null == groupSwitches ? _self._groupSwitches : groupSwitches // ignore: cast_nullable_to_non_nullable
+as Map<String, bool>,
   ));
 }
 
@@ -655,83 +655,95 @@ $SubscriptionInfoCopyWith<$Res>? get subscriptionInfo {
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
-$ProfileOverridesCopyWith<$Res> get overrides {
+$OverrideDataCopyWith<$Res> get overrideData {
   
-  return $ProfileOverridesCopyWith<$Res>(_self.overrides, (value) {
-    return _then(_self.copyWith(overrides: value));
+  return $OverrideDataCopyWith<$Res>(_self.overrideData, (value) {
+    return _then(_self.copyWith(overrideData: value));
   });
 }
 }
 
-/// @nodoc
-mixin _$DisabledRule {
 
- int get profileId; int get ruleId;
-/// Create a copy of DisabledRule
+/// @nodoc
+mixin _$OverrideData {
+
+ bool get enable; OverrideRule get rule;
+/// Create a copy of OverrideData
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
-$DisabledRuleCopyWith<DisabledRule> get copyWith => _$DisabledRuleCopyWithImpl<DisabledRule>(this as DisabledRule, _$identity);
+$OverrideDataCopyWith<OverrideData> get copyWith => _$OverrideDataCopyWithImpl<OverrideData>(this as OverrideData, _$identity);
 
+  /// Serializes this OverrideData to a JSON map.
+  Map<String, dynamic> toJson();
 
 
 @override
 bool operator ==(Object other) {
-  final _this = this as DisabledRule;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DisabledRule&&(identical(other.profileId, _this.profileId) || other.profileId == _this.profileId)&&(identical(other.ruleId, _this.ruleId) || other.ruleId == _this.ruleId));
+  final _this = this as OverrideData;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is OverrideData&&(identical(other.enable, _this.enable) || other.enable == _this.enable)&&(identical(other.rule, _this.rule) || other.rule == _this.rule));
 }
 
-
+@JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-  final _this = this as DisabledRule;
-  return Object.hash(runtimeType,_this.profileId,_this.ruleId);
+  final _this = this as OverrideData;
+  return Object.hash(runtimeType,_this.enable,_this.rule);
 }
 
 @override
 String toString() {
-  final _this = this as DisabledRule;
-  return 'DisabledRule(profileId: ${_this.profileId}, ruleId: ${_this.ruleId})';
+  final _this = this as OverrideData;
+  return 'OverrideData(enable: ${_this.enable}, rule: ${_this.rule})';
 }
 
 
 }
 
 /// @nodoc
-abstract mixin class $DisabledRuleCopyWith<$Res>  {
-  factory $DisabledRuleCopyWith(DisabledRule value, $Res Function(DisabledRule) _then) = _$DisabledRuleCopyWithImpl;
+abstract mixin class $OverrideDataCopyWith<$Res>  {
+  factory $OverrideDataCopyWith(OverrideData value, $Res Function(OverrideData) _then) = _$OverrideDataCopyWithImpl;
 @useResult
 $Res call({
- int profileId, int ruleId
+ bool enable, OverrideRule rule
 });
 
 
-
+$OverrideRuleCopyWith<$Res> get rule;
 
 }
 /// @nodoc
-class _$DisabledRuleCopyWithImpl<$Res>
-    implements $DisabledRuleCopyWith<$Res> {
-  _$DisabledRuleCopyWithImpl(this._self, this._then);
+class _$OverrideDataCopyWithImpl<$Res>
+    implements $OverrideDataCopyWith<$Res> {
+  _$OverrideDataCopyWithImpl(this._self, this._then);
 
-  final DisabledRule _self;
-  final $Res Function(DisabledRule) _then;
+  final OverrideData _self;
+  final $Res Function(OverrideData) _then;
 
-/// Create a copy of DisabledRule
+/// Create a copy of OverrideData
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? profileId = null,Object? ruleId = null,}) {
-  return _then(DisabledRule(
-profileId: null == profileId ? _self.profileId : profileId // ignore: cast_nullable_to_non_nullable
-as int,ruleId: null == ruleId ? _self.ruleId : ruleId // ignore: cast_nullable_to_non_nullable
-as int,
+@pragma('vm:prefer-inline') @override $Res call({Object? enable = null,Object? rule = null,}) {
+  return _then(OverrideData(
+enable: null == enable ? _self.enable : enable // ignore: cast_nullable_to_non_nullable
+as bool,rule: null == rule ? _self.rule : rule // ignore: cast_nullable_to_non_nullable
+as OverrideRule,
   ));
 }
-
+/// Create a copy of OverrideData
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$OverrideRuleCopyWith<$Res> get rule {
+  
+  return $OverrideRuleCopyWith<$Res>(_self.rule, (value) {
+    return _then(_self.copyWith(rule: value));
+  });
+}
 }
 
 
-/// Adds pattern-matching-related methods to [DisabledRule].
-extension DisabledRulePatterns on DisabledRule {
+/// Adds pattern-matching-related methods to [OverrideData].
+extension OverrideDataPatterns on OverrideData {
 /// A variant of `map` that fallback to returning `orElse`.
 ///
 /// It is equivalent to doing:
@@ -744,10 +756,10 @@ extension DisabledRulePatterns on DisabledRule {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _DisabledRule value)?  $default,{required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _OverrideData value)?  $default,{required TResult orElse(),}){
 final _that = this;
 switch (_that) {
-case _DisabledRule() when $default != null:
+case _OverrideData() when $default != null:
 return $default(_that);case _:
   return orElse();
 
@@ -766,10 +778,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _DisabledRule value)  $default,){
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _OverrideData value)  $default,){
 final _that = this;
 switch (_that) {
-case _DisabledRule():
+case _OverrideData():
 return $default(_that);case _:
   throw StateError('Unexpected subclass');
 
@@ -787,10 +799,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _DisabledRule value)?  $default,){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _OverrideData value)?  $default,){
 final _that = this;
 switch (_that) {
-case _DisabledRule() when $default != null:
+case _OverrideData() when $default != null:
 return $default(_that);case _:
   return null;
 
@@ -808,10 +820,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int profileId,  int ruleId)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( bool enable,  OverrideRule rule)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
-case _DisabledRule() when $default != null:
-return $default(_that.profileId,_that.ruleId);case _:
+case _OverrideData() when $default != null:
+return $default(_that.enable,_that.rule);case _:
   return orElse();
 
 }
@@ -829,10 +841,10 @@ return $default(_that.profileId,_that.ruleId);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int profileId,  int ruleId)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( bool enable,  OverrideRule rule)  $default,) {final _that = this;
 switch (_that) {
-case _DisabledRule():
-return $default(_that.profileId,_that.ruleId);case _:
+case _OverrideData():
+return $default(_that.enable,_that.rule);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -849,10 +861,10 @@ return $default(_that.profileId,_that.ruleId);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int profileId,  int ruleId)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( bool enable,  OverrideRule rule)?  $default,) {final _that = this;
 switch (_that) {
-case _DisabledRule() when $default != null:
-return $default(_that.profileId,_that.ruleId);case _:
+case _OverrideData() when $default != null:
+return $default(_that.enable,_that.rule);case _:
   return null;
 
 }
@@ -861,48 +873,130 @@ return $default(_that.profileId,_that.ruleId);case _:
 }
 
 /// @nodoc
+@JsonSerializable()
 
+class _OverrideData implements OverrideData {
+  const _OverrideData({this.enable = false, this.rule = const OverrideRule()});
+  factory _OverrideData.fromJson(Map<String, dynamic> json) => _$OverrideDataFromJson(json);
 
-class _DisabledRule implements DisabledRule {
-  const _DisabledRule({required this.profileId, required this.ruleId});
-  
+@override@JsonKey() final  bool enable;
+@override@JsonKey() final  OverrideRule rule;
 
-@override final  int profileId;
-@override final  int ruleId;
-
-/// Create a copy of DisabledRule
+/// Create a copy of OverrideData
 /// with the given fields replaced by the non-null parameter values.
 @override @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
-_$DisabledRuleCopyWith<_DisabledRule> get copyWith => __$DisabledRuleCopyWithImpl<_DisabledRule>(this, _$identity);
+_$OverrideDataCopyWith<_OverrideData> get copyWith => __$OverrideDataCopyWithImpl<_OverrideData>(this, _$identity);
 
-
+@override
+Map<String, dynamic> toJson() {
+  return _$OverrideDataToJson(this, );
+}
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _DisabledRule&&(identical(other.profileId, profileId) || other.profileId == profileId)&&(identical(other.ruleId, ruleId) || other.ruleId == ruleId));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _OverrideData&&(identical(other.enable, enable) || other.enable == enable)&&(identical(other.rule, rule) || other.rule == rule));
 }
 
-
+@JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,profileId,ruleId);
+    return Object.hash(runtimeType,enable,rule);
 }
 
 @override
 String toString() {
-    return 'DisabledRule(profileId: $profileId, ruleId: $ruleId)';
+    return 'OverrideData(enable: $enable, rule: $rule)';
 }
 
 
 }
 
 /// @nodoc
-abstract mixin class _$DisabledRuleCopyWith<$Res> implements $DisabledRuleCopyWith<$Res> {
-  factory _$DisabledRuleCopyWith(_DisabledRule value, $Res Function(_DisabledRule) _then) = __$DisabledRuleCopyWithImpl;
+abstract mixin class _$OverrideDataCopyWith<$Res> implements $OverrideDataCopyWith<$Res> {
+  factory _$OverrideDataCopyWith(_OverrideData value, $Res Function(_OverrideData) _then) = __$OverrideDataCopyWithImpl;
 @override @useResult
 $Res call({
- int profileId, int ruleId
+ bool enable, OverrideRule rule
+});
+
+
+@override $OverrideRuleCopyWith<$Res> get rule;
+
+}
+/// @nodoc
+class __$OverrideDataCopyWithImpl<$Res>
+    implements _$OverrideDataCopyWith<$Res> {
+  __$OverrideDataCopyWithImpl(this._self, this._then);
+
+  final _OverrideData _self;
+  final $Res Function(_OverrideData) _then;
+
+/// Create a copy of OverrideData
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? enable = null,Object? rule = null,}) {
+  return _then(_OverrideData(
+enable: null == enable ? _self.enable : enable // ignore: cast_nullable_to_non_nullable
+as bool,rule: null == rule ? _self.rule : rule // ignore: cast_nullable_to_non_nullable
+as OverrideRule,
+  ));
+}
+
+/// Create a copy of OverrideData
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$OverrideRuleCopyWith<$Res> get rule {
+  
+  return $OverrideRuleCopyWith<$Res>(_self.rule, (value) {
+    return _then(_self.copyWith(rule: value));
+  });
+}
+}
+
+
+/// @nodoc
+mixin _$OverrideRule {
+
+ OverrideRuleType get type; List<Rule> get overrideRules; List<Rule> get addedRules;
+/// Create a copy of OverrideRule
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$OverrideRuleCopyWith<OverrideRule> get copyWith => _$OverrideRuleCopyWithImpl<OverrideRule>(this as OverrideRule, _$identity);
+
+  /// Serializes this OverrideRule to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  final _this = this as OverrideRule;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is OverrideRule&&(identical(other.type, _this.type) || other.type == _this.type)&&const DeepCollectionEquality().equals(other.overrideRules, _this.overrideRules)&&const DeepCollectionEquality().equals(other.addedRules, _this.addedRules));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+  final _this = this as OverrideRule;
+  return Object.hash(runtimeType,_this.type,const DeepCollectionEquality().hash(_this.overrideRules),const DeepCollectionEquality().hash(_this.addedRules));
+}
+
+@override
+String toString() {
+  final _this = this as OverrideRule;
+  return 'OverrideRule(type: ${_this.type}, overrideRules: ${_this.overrideRules}, addedRules: ${_this.addedRules})';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $OverrideRuleCopyWith<$Res>  {
+  factory $OverrideRuleCopyWith(OverrideRule value, $Res Function(OverrideRule) _then) = _$OverrideRuleCopyWithImpl;
+@useResult
+$Res call({
+ OverrideRuleType type, List<Rule> overrideRules, List<Rule> addedRules
 });
 
 
@@ -910,20 +1004,238 @@ $Res call({
 
 }
 /// @nodoc
-class __$DisabledRuleCopyWithImpl<$Res>
-    implements _$DisabledRuleCopyWith<$Res> {
-  __$DisabledRuleCopyWithImpl(this._self, this._then);
+class _$OverrideRuleCopyWithImpl<$Res>
+    implements $OverrideRuleCopyWith<$Res> {
+  _$OverrideRuleCopyWithImpl(this._self, this._then);
 
-  final _DisabledRule _self;
-  final $Res Function(_DisabledRule) _then;
+  final OverrideRule _self;
+  final $Res Function(OverrideRule) _then;
 
-/// Create a copy of DisabledRule
+/// Create a copy of OverrideRule
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? profileId = null,Object? ruleId = null,}) {
-  return _then(_DisabledRule(
-profileId: null == profileId ? _self.profileId : profileId // ignore: cast_nullable_to_non_nullable
-as int,ruleId: null == ruleId ? _self.ruleId : ruleId // ignore: cast_nullable_to_non_nullable
-as int,
+@pragma('vm:prefer-inline') @override $Res call({Object? type = null,Object? overrideRules = null,Object? addedRules = null,}) {
+  return _then(OverrideRule(
+type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
+as OverrideRuleType,overrideRules: null == overrideRules ? _self.overrideRules : overrideRules // ignore: cast_nullable_to_non_nullable
+as List<Rule>,addedRules: null == addedRules ? _self.addedRules : addedRules // ignore: cast_nullable_to_non_nullable
+as List<Rule>,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [OverrideRule].
+extension OverrideRulePatterns on OverrideRule {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _OverrideRule value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _OverrideRule() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _OverrideRule value)  $default,){
+final _that = this;
+switch (_that) {
+case _OverrideRule():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _OverrideRule value)?  $default,){
+final _that = this;
+switch (_that) {
+case _OverrideRule() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( OverrideRuleType type,  List<Rule> overrideRules,  List<Rule> addedRules)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _OverrideRule() when $default != null:
+return $default(_that.type,_that.overrideRules,_that.addedRules);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( OverrideRuleType type,  List<Rule> overrideRules,  List<Rule> addedRules)  $default,) {final _that = this;
+switch (_that) {
+case _OverrideRule():
+return $default(_that.type,_that.overrideRules,_that.addedRules);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( OverrideRuleType type,  List<Rule> overrideRules,  List<Rule> addedRules)?  $default,) {final _that = this;
+switch (_that) {
+case _OverrideRule() when $default != null:
+return $default(_that.type,_that.overrideRules,_that.addedRules);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _OverrideRule implements OverrideRule {
+  const _OverrideRule({this.type = OverrideRuleType.added,  List<Rule> overrideRules = const [],  List<Rule> addedRules = const []}): _overrideRules = overrideRules,_addedRules = addedRules;
+  factory _OverrideRule.fromJson(Map<String, dynamic> json) => _$OverrideRuleFromJson(json);
+
+@override@JsonKey() final  OverrideRuleType type;
+ final  List<Rule> _overrideRules;
+@override@JsonKey() List<Rule> get overrideRules {
+  if (_overrideRules is EqualUnmodifiableListView) return _overrideRules;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_overrideRules);
+}
+
+ final  List<Rule> _addedRules;
+@override@JsonKey() List<Rule> get addedRules {
+  if (_addedRules is EqualUnmodifiableListView) return _addedRules;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_addedRules);
+}
+
+
+/// Create a copy of OverrideRule
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$OverrideRuleCopyWith<_OverrideRule> get copyWith => __$OverrideRuleCopyWithImpl<_OverrideRule>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$OverrideRuleToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _OverrideRule&&(identical(other.type, type) || other.type == type)&&const DeepCollectionEquality().equals(other.overrideRules, _overrideRules)&&const DeepCollectionEquality().equals(other.addedRules, _addedRules));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+    return Object.hash(runtimeType,type,const DeepCollectionEquality().hash(_overrideRules),const DeepCollectionEquality().hash(_addedRules));
+}
+
+@override
+String toString() {
+    return 'OverrideRule(type: $type, overrideRules: $overrideRules, addedRules: $addedRules)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$OverrideRuleCopyWith<$Res> implements $OverrideRuleCopyWith<$Res> {
+  factory _$OverrideRuleCopyWith(_OverrideRule value, $Res Function(_OverrideRule) _then) = __$OverrideRuleCopyWithImpl;
+@override @useResult
+$Res call({
+ OverrideRuleType type, List<Rule> overrideRules, List<Rule> addedRules
+});
+
+
+
+
+}
+/// @nodoc
+class __$OverrideRuleCopyWithImpl<$Res>
+    implements _$OverrideRuleCopyWith<$Res> {
+  __$OverrideRuleCopyWithImpl(this._self, this._then);
+
+  final _OverrideRule _self;
+  final $Res Function(_OverrideRule) _then;
+
+/// Create a copy of OverrideRule
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? type = null,Object? overrideRules = null,Object? addedRules = null,}) {
+  return _then(_OverrideRule(
+type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
+as OverrideRuleType,overrideRules: null == overrideRules ? _self._overrideRules : overrideRules // ignore: cast_nullable_to_non_nullable
+as List<Rule>,addedRules: null == addedRules ? _self._addedRules : addedRules // ignore: cast_nullable_to_non_nullable
+as List<Rule>,
   ));
 }
 

@@ -1,427 +1,419 @@
-import 'dart:async';
-
-import 'package:outo/common/cache.dart';
-import 'package:outo/common/common.dart';
-import 'package:outo/plugins/app.dart';
-import 'package:outo/ui/icons/icons.dart';
-import 'package:outo/ui/ui.dart';
-import 'package:flutter/foundation.dart';
+import 'dart:io';
+import 'package:bett_box/common/common.dart';
+import 'package:dio/dio.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:crypto/crypto.dart';
+import 'dart:convert';
+import 'package:path/path.dart' as path;
 
-const _maxCachedIconBytes = 16 << 20;
-
-// The precache and the widget must resolve equal providers to share one
-// ImageCache entry; 192 physical pixels cover a 48 dp icon box at 4x.
-const _iconDecodeExtent = 192;
-
-ImageProvider _iconImage(Uint8List bytes) {
-  return ResizeImage(
-    MemoryImage(bytes),
-    width: _iconDecodeExtent,
-    height: _iconDecodeExtent,
-    policy: ResizeImagePolicy.fit,
+class _IconFileManager {
+  static final Dio _dio = Dio(
+    BaseOptions(
+      connectTimeout: const Duration(seconds: 5),
+      receiveTimeout: const Duration(seconds: 10),
+      responseType: ResponseType.bytes,
+    ),
   );
-}
 
-class _IconBytesCache {
-  _IconBytesCache(this.maxBytes);
+  static final Map<String, Future<File?>> _inFlightDownloads = {};
 
-  final int maxBytes;
-  final _entries = <String, Uint8List?>{};
-  var _bytes = 0;
-
-  bool contains(String key) => _entries.containsKey(key);
-
-  Uint8List? operator [](String key) {
-    if (!_entries.containsKey(key)) {
-      return null;
+  static Future<File> getCacheFile(String url) async {
+    final hash = md5.convert(utf8.encode(url)).toString();
+    final tempDir = await appPath.tempPath;
+    final ext = url.isSvg ? '.svg' : '.img';
+    final dir = Directory(path.join(tempDir, 'icon_raw_cache'));
+    if (!dir.existsSync()) {
+      await dir.create(recursive: true);
     }
-    return _entries[key] = _entries.remove(key);
+    return File(path.join(dir.path, '$hash$ext'));
   }
 
-  void operator []=(String key, Uint8List? value) {
-    remove(key);
-    final size = value?.lengthInBytes ?? 0;
-    if (size > maxBytes) {
-      return;
-    }
-    _entries[key] = value;
-    _bytes += size;
-    while (_bytes > maxBytes) {
-      remove(_entries.keys.first);
-    }
-  }
-
-  void remove(String key) {
-    _bytes -= _entries.remove(key)?.lengthInBytes ?? 0;
-  }
-}
-
-final _decodedIcons = _IconBytesCache(_maxCachedIconBytes);
-final _remoteIcons = _IconBytesCache(_maxCachedIconBytes);
-
-Uint8List? _decodeIcon(String src) {
-  if (!src.contains('base64,')) {
+  static Future<File?> getFileFromCache(String url) async {
+    try {
+      final file = await getCacheFile(url);
+      if (await file.exists() && (await file.length()) > 0) {
+        return file;
+      }
+    } catch (_) {}
     return null;
   }
-  if (_decodedIcons.contains(src)) {
-    return _decodedIcons[src];
+
+  static Future<File?> downloadFile(String url) async {
+    final existing = await getFileFromCache(url);
+    if (existing != null) {
+      return existing;
+    }
+
+    if (_inFlightDownloads.containsKey(url)) {
+      return await _inFlightDownloads[url];
+    }
+
+    final future = _downloadInternal(url);
+    _inFlightDownloads[url] = future;
+    try {
+      return await future;
+    } finally {
+      _inFlightDownloads.remove(url);
+    }
   }
-  return _decodedIcons[src] = src.getBase64;
+
+  static Future<File?> _downloadInternal(String url) async {
+    try {
+      final targetFile = await getCacheFile(url);
+      final tempFile = File('${targetFile.path}.tmp');
+
+      final response = await _dio.get<List<int>>(url);
+      final data = response.data;
+      if (data == null || data.isEmpty) {
+        return null;
+      }
+
+      await tempFile.writeAsBytes(data, flush: true);
+      if (await targetFile.exists()) {
+        await targetFile.delete();
+      }
+      await tempFile.rename(targetFile.path);
+      return targetFile;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static Future<void> removeFile(String url) async {
+    try {
+      final file = await getCacheFile(url);
+      if (await file.exists()) {
+        await file.delete();
+      }
+    } catch (_) {}
+  }
 }
 
-class CommonTargetIcon extends StatelessWidget {
+class CommonTargetIcon extends StatefulWidget {
   final String src;
+  final double size;
 
-  /// Shown while [src] is empty, loading or unreadable.
-  final Widget? fallback;
+  const CommonTargetIcon({super.key, required this.src, required this.size});
 
-  const CommonTargetIcon({super.key, required this.src, this.fallback});
+  static final ValueNotifier<int> _cacheVersion = ValueNotifier(0);
 
-  Widget _defaultIcon() {
-    return fallback ?? const _ImagePlaceholder();
-  }
-
-  Widget _buildIcon() {
-    if (src.isEmpty) {
-      return _defaultIcon();
+  static Future<void> clearCache() async {
+    final tempDir = await appPath.tempPath;
+    for (final name in ['icon_raw_cache', 'resized_icons']) {
+      final dir = Directory(path.join(tempDir, name));
+      if (await dir.exists()) {
+        await dir.delete(recursive: true);
+      }
     }
+    _CommonTargetIconState._moduleFileCache.clear();
+    _CommonTargetIconState._moduleSvgValidCache.clear();
+    _CommonTargetIconState._moduleFailureCache.clear();
+    final imageCache = PaintingBinding.instance.imageCache;
+    imageCache.clear();
+    imageCache.clearLiveImages();
+    svg.cache.clear();
+    _cacheVersion.value++;
+  }
 
-    final base64 = _decodeIcon(src);
-    if (base64 != null) {
-      return _BytesImage(
-        bytes: base64,
-        isSvg: src.isSvg,
-        fallback: _defaultIcon(),
-      );
+  @override
+  State<CommonTargetIcon> createState() => _CommonTargetIconState();
+}
+
+class _CommonTargetIconState extends State<CommonTargetIcon> {
+  File? _file;
+  String? _cachedSrc; // Cached src
+  int? _cachedSize; // Cached size
+  bool _didSyncCheck = false; // Guard for didChangeDependencies
+
+  static final Map<String, File?> _moduleFileCache = {};
+  static final Map<String, bool> _moduleSvgValidCache = {};
+  static final Map<String, DateTime> _moduleFailureCache = {};
+  static const _maxCacheEntries = 1024;
+  static const _failureCooldownSeconds = 10;
+
+  static void _ensureCacheLimit() {
+    while (_moduleFileCache.length > _maxCacheEntries) {
+      _moduleFileCache.remove(_moduleFileCache.keys.first);
     }
-
-    return ImageCacheWidget(src: src, defaultWidget: _defaultIcon());
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return _buildIcon();
-  }
-}
-
-class _ImagePlaceholder extends StatelessWidget {
-  const _ImagePlaceholder();
-
-  @override
-  Widget build(BuildContext context) {
-    final size = IconTheme.of(context).size ?? 24;
-    final colorScheme = context.colorScheme;
-    return SizedBox.square(
-      dimension: size,
-      child: Center(
-        child: GlyphIcon(
-          AppGlyphs.photos,
-          size: size * 0.7,
-          color: Color.alphaBlend(
-            colorScheme.onSurfaceVariant.opacity50,
-            colorScheme.surface,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Stands for a proxy group without an icon: the first letter or digit of
-/// its name, past any leading emoji the name already shows.
-class GroupMonogram extends StatelessWidget {
-  final String name;
-
-  const GroupMonogram(this.name, {super.key});
-
-  static final _letter = RegExp(r'[\p{L}\p{N}]', unicode: true);
-
-  String get _mark {
-    final letter = _letter.firstMatch(name)?.group(0);
-    if (letter != null) {
-      return letter.toUpperCase();
+    while (_moduleSvgValidCache.length > _maxCacheEntries) {
+      _moduleSvgValidCache.remove(_moduleSvgValidCache.keys.first);
     }
-    return name.characters.firstOrNull ?? '';
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final iconTheme = IconTheme.of(context);
-    final size = iconTheme.size ?? 24;
-    final mark = _mark;
-    if (mark.isEmpty) {
-      return const _ImagePlaceholder();
+  bool _shouldRetry(String key) {
+    final failedAt = _moduleFailureCache[key];
+    if (failedAt == null) return true;
+    if (DateTime.now().difference(failedAt).inSeconds <
+        _failureCooldownSeconds) {
+      return false;
     }
-    return SizedBox.square(
-      dimension: size,
-      child: Center(
-        child: EmojiText(
-          mark,
-          maxLines: 1,
-          style: AppTextStyle.custom(
-            context,
-            size: size * 0.62,
-            leading: size * 0.62,
-            weight: FontWeight.w600,
-          ).copyWith(color: iconTheme.color),
-        ),
-      ),
-    );
+    _moduleFailureCache.remove(key);
+    return true;
   }
-}
-
-class _BytesImage extends StatelessWidget {
-  const _BytesImage({
-    required this.bytes,
-    required this.isSvg,
-    required this.fallback,
-    this.onError,
-  });
-
-  final Uint8List bytes;
-  final bool isSvg;
-  final Widget fallback;
-  final VoidCallback? onError;
-
-  Widget _buildFallback() {
-    onError?.call();
-    return fallback;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return isSvg
-        ? SvgPicture.memory(bytes, errorBuilder: (_, _, _) => _buildFallback())
-        : Image(
-            image: _iconImage(bytes),
-            gaplessPlayback: true,
-            errorBuilder: (_, _, _) => _buildFallback(),
-          );
-  }
-}
-
-final _cacheManager = CacheManager(
-  Config(
-    DefaultCacheManager.key,
-    fileService: HttpFileService()..concurrentFetches = maxConcurrentIconLoads,
-  ),
-);
-
-Stream<Uint8List> _readCachedIcon(String src) {
-  return _cacheManager
-      .getFileStreamV2(src)
-      .asyncMap((data) => data.file.readAsBytes());
-}
-
-var _readRemoteIcon = _readCachedIcon;
-
-@visibleForTesting
-set readRemoteIcon(Stream<Uint8List> Function(String src)? value) {
-  _readRemoteIcon = value ?? _readCachedIcon;
-}
-
-Stream<Uint8List> _loadRemoteIcon(String src) {
-  return _readRemoteIcon(src).map((bytes) {
-    final current = _remoteIcons[src];
-    final next = current != null && listEquals(current, bytes)
-        ? current
-        : bytes;
-    return _remoteIcons[src] = next;
-  });
-}
-
-Future<void> _decodeAhead(Uint8List bytes) {
-  final completer = Completer<void>();
-  final stream = _iconImage(bytes).resolve(ImageConfiguration.empty);
-  late final ImageStreamListener listener;
-  void finish() {
-    stream.removeListener(listener);
-    completer.complete();
-  }
-
-  listener = ImageStreamListener(
-    (_, _) => finish(),
-    onError: (_, _) => finish(),
-  );
-  stream.addListener(listener);
-  return completer.future;
-}
-
-Future<void> precacheTargetIcons(Iterable<String> srcs) async {
-  final pending = srcs
-      .toSet()
-      .where(
-        (src) =>
-            src.isNotEmpty &&
-            !src.contains('base64,') &&
-            !_remoteIcons.contains(src),
-      )
-      .map((src) async {
-        try {
-          await for (final bytes in _loadRemoteIcon(src)) {
-            if (!src.isSvg) {
-              await _decodeAhead(bytes);
-            }
-          }
-        } catch (error) {
-          commonPrint.log('Failed to precache icon $src: $error');
-        }
-      });
-  await Future.wait(pending);
-}
-
-class ImageCacheWidget extends StatefulWidget {
-  final String src;
-  final Widget defaultWidget;
-
-  const ImageCacheWidget({
-    super.key,
-    required this.src,
-    required this.defaultWidget,
-  });
-
-  @override
-  State<ImageCacheWidget> createState() => _ImageCacheWidgetState();
-}
-
-class _ImageCacheWidgetState extends State<ImageCacheWidget> {
-  late final ValueNotifier<Uint8List?> _bytesNotifier;
-  StreamSubscription? _streamSubscription;
-  var _loadEnded = false;
 
   @override
   void initState() {
     super.initState();
-    _bytesNotifier = ValueNotifier(_remoteIcons[widget.src]);
-    _getImageFormCache();
-  }
-
-  @override
-  void didUpdateWidget(covariant ImageCacheWidget oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.src != widget.src) {
-      _bytesNotifier.value = _remoteIcons[widget.src];
-      _loadEnded = false;
-      _getImageFormCache();
-    }
-  }
-
-  void _getImageFormCache() {
-    final src = widget.src;
-    _streamSubscription?.cancel();
-    _streamSubscription = null;
-    if (src.isEmpty) {
-      return;
-    }
-    _streamSubscription = _loadRemoteIcon(src).listen(
-      (bytes) {
-        if (mounted) {
-          _bytesNotifier.value = bytes;
-        }
-      },
-      onError: (Object error) {
-        commonPrint.log('Failed to read icon $src: $error');
-      },
-      onDone: () {
-        if (mounted && _bytesNotifier.value == null) {
-          setState(() => _loadEnded = true);
-        }
-      },
-    );
+    CommonTargetIcon._cacheVersion.addListener(_handleCacheReset);
   }
 
   @override
   void dispose() {
-    _streamSubscription?.cancel();
-    _bytesNotifier.dispose();
+    CommonTargetIcon._cacheVersion.removeListener(_handleCacheReset);
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return ValueListenableBuilder<Uint8List?>(
-      valueListenable: _bytesNotifier,
-      builder: (context, bytes, _) {
-        if (bytes == null) {
-          return _loadEnded || widget.src.isEmpty
-              ? widget.defaultWidget
-              : SizedBox.square(dimension: IconTheme.of(context).size ?? 24);
-        }
-        return _BytesImage(
-          bytes: bytes,
-          isSvg: widget.src.isSvg,
-          fallback: widget.defaultWidget,
-          onError: () => _remoteIcons.remove(widget.src),
-        );
-      },
-    );
+  void _handleCacheReset() {
+    if (!mounted) return;
+    setState(() {
+      _file = null;
+      _cachedSrc = null;
+      _cachedSize = null;
+    });
+    _syncCheckAndInit();
   }
-}
 
-class PackageIcon extends StatefulWidget {
-  final String packageName;
-  final double size;
+  void _syncCheckAndInit() {
+    if (widget.src.isEmpty || widget.src.getBase64 != null) return;
 
-  const PackageIcon({super.key, required this.packageName, required this.size});
+    final devicePixelRatio = MediaQuery.of(context).devicePixelRatio;
+    final cacheSize = (widget.size * devicePixelRatio).ceil();
 
-  @override
-  State<PackageIcon> createState() => _PackageIconState();
-}
-
-class _PackageIconState extends State<PackageIcon> {
-  ImageProvider? _icon;
-  int _generation = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _showCachedIcon();
-    _loadIcon();
+    final exactFile = _moduleFileCache[widget.src];
+    if (exactFile != null) {
+      _cachedSrc = widget.src;
+      _cachedSize = cacheSize;
+      _file = exactFile;
+      return;
+    }
+    _init(cacheSize);
   }
 
   @override
-  void didUpdateWidget(covariant PackageIcon oldWidget) {
+  void didUpdateWidget(covariant CommonTargetIcon oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.packageName != widget.packageName) {
-      _showCachedIcon();
-      _loadIcon();
+    if (oldWidget.src != widget.src || oldWidget.size != widget.size) {
+      _file = null;
+      _cachedSrc = null;
+      _cachedSize = null;
+      _didSyncCheck = true;
+      _syncCheckAndInit();
     }
   }
 
-  void _showCachedIcon() {
-    _generation++;
-    _icon = app?.getCachedPackageIcon(widget.packageName);
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_didSyncCheck) return;
+    _didSyncCheck = true;
+    _syncCheckAndInit();
   }
 
-  void _loadIcon() {
-    final generation = _generation;
-    app?.getPackageIcon(widget.packageName).then((icon) {
-      if (!mounted ||
-          generation != _generation ||
-          icon == null ||
-          icon == _icon) {
+  Future<bool> _validateSvg(File file) async {
+    try {
+      final content = await file.readAsString();
+      final trimmed = content.trim();
+
+      if (!trimmed.startsWith('<svg') &&
+          !trimmed.startsWith('<?xml') &&
+          !trimmed.startsWith('<!DOCTYPE svg')) {
+        commonPrint.warn('Invalid SVG: not starting with svg tag');
+        return false;
+      }
+
+      if (trimmed.contains('<!DOCTYPE html>') ||
+          trimmed.contains('<html>') ||
+          trimmed.contains('<head>') ||
+          trimmed.contains('<body>')) {
+        commonPrint.warn('Invalid SVG: HTML content detected');
+        return false;
+      }
+
+      if (!trimmed.contains('<svg') &&
+          !trimmed.contains('<svg ') &&
+          !trimmed.contains('<svg\n')) {
+        commonPrint.warn('Invalid SVG: svg tag missing');
+        return false;
+      }
+
+      if (!trimmed.endsWith('</svg>') &&
+          !trimmed.endsWith('/>') &&
+          !trimmed.contains('</svg>')) {
+        commonPrint.warn('Invalid SVG: closing tag missing');
+        return false;
+      }
+
+      if (content.contains('font-weight:none') ||
+          content.contains('font-weight: none')) {
+        final fixed = content
+            .replaceAll('font-weight:none', 'font-weight:normal')
+            .replaceAll('font-weight: none', 'font-weight: normal');
+        await file.writeAsString(fixed);
+      }
+      return true;
+    } catch (e) {
+      commonPrint.warn('SVG validation failed: $e');
+      return false;
+    }
+  }
+
+  Future<void> _init(int cacheSize) async {
+    if (widget.src.isEmpty || widget.src.getBase64 != null) {
+      return;
+    }
+
+    if (_cachedSrc == widget.src && _cachedSize == cacheSize && _file != null) {
+      return;
+    }
+
+    final key = widget.src;
+
+    if (_moduleFileCache.containsKey(key)) {
+      final cachedFile = _moduleFileCache[key];
+      if (cachedFile == null) return;
+
+      if (mounted) {
+        setState(() {
+          _file = cachedFile;
+          _cachedSrc = widget.src;
+          _cachedSize = cacheSize;
+        });
+      }
+      return;
+    }
+
+    if (!_shouldRetry(key)) return;
+
+    final cachedFile = await _IconFileManager.getFileFromCache(widget.src);
+    if (cachedFile != null && mounted && widget.src.isNotEmpty) {
+      await _processFile(cachedFile, cacheSize, key);
+      return;
+    }
+
+    try {
+      final file = await _IconFileManager.downloadFile(widget.src);
+      if (file != null && mounted && widget.src.isNotEmpty) {
+        await _processFile(file, cacheSize, key);
+      } else {
+        _moduleFailureCache[key] = DateTime.now();
+      }
+    } catch (_) {
+      _moduleFailureCache[key] = DateTime.now();
+    }
+  }
+
+  Future<void> _processFile(File file, int cacheSize, String key) async {
+    if (widget.src.isSvg) {
+      final isValid = await _validateSvg(file);
+      if (!isValid) {
+        await _IconFileManager.removeFile(widget.src);
+        _moduleFileCache[key] = null;
+        _moduleFailureCache.remove(key);
+        if (mounted) {
+          setState(() {
+            _file = null;
+            _cachedSrc = null;
+            _cachedSize = null;
+          });
+        }
         return;
       }
+      _moduleFileCache[key] = file;
+      _moduleSvgValidCache[widget.src] = true;
+      _moduleFailureCache.remove(key);
+      _ensureCacheLimit();
+      if (mounted) {
+        setState(() {
+          _file = file;
+          _cachedSrc = widget.src;
+          _cachedSize = cacheSize;
+        });
+      }
+      return;
+    }
+
+    _moduleFileCache[key] = file;
+    _moduleFailureCache.remove(key);
+    _ensureCacheLimit();
+    if (mounted) {
       setState(() {
-        _icon = icon;
+        _file = file;
+        _cachedSrc = widget.src;
+        _cachedSize = cacheSize;
       });
-    });
+    }
+  }
+
+  Widget _defaultIcon() {
+    return Icon(IconsExt.target, size: widget.size);
+  }
+
+  Widget _buildIcon() {
+    if (widget.src.isEmpty) {
+      return _defaultIcon();
+    }
+    final base64 = widget.src.getBase64;
+    final devicePixelRatio = MediaQuery.of(context).devicePixelRatio;
+    final cacheSize = (widget.size * devicePixelRatio).ceil();
+
+    if (base64 != null) {
+      return Image.memory(
+        base64,
+        gaplessPlayback: true,
+        fit: BoxFit.contain,
+        errorBuilder: (_, _, _) {
+          return _defaultIcon();
+        },
+      );
+    }
+    if (_file != null) {
+      final key = widget.src;
+      if (widget.src.isSvg) {
+        return SvgPicture.file(
+          _file!,
+          width: widget.size,
+          height: widget.size,
+          fit: BoxFit.contain,
+          placeholderBuilder: (_) => _defaultIcon(),
+          errorBuilder: (_, error, _) {
+            commonPrint.warn('Failed to load SVG: $error');
+            _IconFileManager.removeFile(widget.src);
+            _moduleFileCache.remove(key);
+            _moduleSvgValidCache.remove(widget.src);
+            _moduleFailureCache[key] = DateTime.now();
+            return _defaultIcon();
+          },
+        );
+      }
+      return Image.file(
+        _file!,
+        gaplessPlayback: true,
+        fit: BoxFit.contain,
+        cacheWidth: cacheSize,
+        cacheHeight: cacheSize,
+        errorBuilder: (_, _, _) {
+          _moduleFileCache.remove(key);
+          _moduleFailureCache[key] = DateTime.now();
+          return _defaultIcon();
+        },
+      );
+    }
+    return _defaultIcon();
   }
 
   @override
   Widget build(BuildContext context) {
-    final icon = _icon;
-    if (icon == null) {
-      return SizedBox(width: widget.size, height: widget.size);
-    }
-    return Image(
-      image: icon,
-      gaplessPlayback: true,
+    return SizedBox(
       width: widget.size,
       height: widget.size,
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 200),
+        child: KeyedSubtree(
+          key: ValueKey<String>('${widget.src}_${_file?.path}'),
+          child: _buildIcon(),
+        ),
+      ),
     );
   }
 }

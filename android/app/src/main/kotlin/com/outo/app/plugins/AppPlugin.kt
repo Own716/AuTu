@@ -3,619 +3,629 @@ package com.outo.app.plugins
 import android.Manifest
 import android.app.Activity
 import android.app.ActivityManager
-import android.content.BroadcastReceiver
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
+import android.content.pm.ApplicationInfo
+import android.content.pm.ComponentInfo
 import android.content.pm.PackageManager
 import android.net.VpnService
 import android.os.Build
-import android.os.Handler
-import android.os.Looper
 import android.provider.Settings
+import android.util.Base64
+import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.core.content.ContextCompat.getSystemService
+import androidx.core.content.getSystemService
 import androidx.core.content.pm.ShortcutInfoCompat
 import androidx.core.content.pm.ShortcutManagerCompat
 import androidx.core.graphics.drawable.IconCompat
-import androidx.core.net.toUri
-import androidx.core.view.OnApplyWindowInsetsListener
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
+import com.outo.app.BettboxApplication
+import com.outo.app.GlobalState
 import com.outo.app.R
-import com.outo.app.common.Components
-import com.outo.app.common.GlobalState
-import com.outo.app.common.PendingCallback
-import com.outo.app.common.QuickAction
-import com.outo.app.common.quickIntent
-import com.outo.app.common.registerReceiverCompat
-import com.outo.app.common.shortcutId
-import com.outo.app.getPackageIconPath
-import com.outo.app.packages.PackageResolver
-import com.outo.app.showToast
-import com.google.gson.Gson
+import com.outo.app.extensions.awaitResult
+import com.outo.app.extensions.getActionIntent
+import com.outo.app.models.Package
+import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.Result
-import io.flutter.plugin.common.PluginRegistry
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
+import java.io.File
+import java.lang.ref.WeakReference
+import java.security.cert.CertificateFactory
+import java.security.cert.X509Certificate
+import java.util.concurrent.ConcurrentHashMap
+import android.content.res.Configuration
+import android.net.Uri
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.drawable.Drawable
 
 class AppPlugin : FlutterPlugin, MethodChannel.MethodCallHandler, ActivityAware {
 
-    private var activity: Activity? = null
-
-    private var activityBinding: ActivityPluginBinding? = null
-
-    private val activityResultListener =
-        PluginRegistry.ActivityResultListener(::onActivityResult)
-
-    private val permissionsResultListener =
-        PluginRegistry.RequestPermissionsResultListener(::onRequestPermissionsResultListener)
-
+    private var activityRef: WeakReference<Activity>? = null
+    private var cachedTaskId: Int? = null
     private lateinit var channel: MethodChannel
-
     private lateinit var scope: CoroutineScope
+    private var vpnCallBack: (() -> Unit)? = null
+    @Volatile
+    private var packages: List<Package> = emptyList()
+    private val packagesMutex = Mutex()
+    private val chinaPackageCache = ConcurrentHashMap<String, Boolean>()
 
-    private val vpnPrepareCallback = PendingCallback<Boolean>()
-
-    private val requestNotificationCallback = PendingCallback<Boolean>()
-
-    private val requestInstalledAppsCallback = PendingCallback<Boolean>()
-
-    private val requestLocalNetworkCallback = PendingCallback<Boolean>()
-
-    private var isRequestingNotificationPermission = false
-
-    private var isRequestingLocalNetworkPermission = false
-
-    private var skipLocalNetworkPermissionRequest = false
-
-    private val gson = Gson()
-
-    private val packageResolver by lazy {
-        PackageResolver(
-            GlobalState.application.packageManager,
-            GlobalState.application.packageName,
-        )
-    }
-
-    private var packageChangeContext: Context? = null
-
-    private val packageChangeReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            if (intent == null || intent.data?.schemeSpecificPart == GlobalState.application.packageName) {
-                return
-            }
-            val addedByUpdate = intent.action == Intent.ACTION_PACKAGE_ADDED &&
-                intent.getBooleanExtra(Intent.EXTRA_REPLACING, false)
-            if (addedByUpdate) {
-                return
-            }
-            packageResolver.invalidate()
-            channel.invokeMethod("packagesChanged", null)
+    private val iconCacheDir by lazy {
+        File(BettboxApplication.getAppContext().cacheDir, "app_icons").apply {
+            if (!exists()) mkdirs()
         }
     }
 
-    private var skipNotificationPermissionRequest = false
+    companion object {
+        private const val ICON_SIZE_DP = 48
+        private const val VPN_PERMISSION_REQUEST_CODE = 1001
+        private const val NOTIFICATION_PERMISSION_REQUEST_CODE = 1002
+        private const val CACHE_MAX_FILES = 500
+        private const val PNG_MAGIC_SIZE = 8
 
-    @Suppress("DEPRECATION")
-    private val isTelevision by lazy {
-        val packageManager = GlobalState.application.packageManager
-        packageManager.hasSystemFeature(PackageManager.FEATURE_TELEVISION) ||
-            packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK)
+        private val SKIP_PREFIX_LIST = listOf(
+            "com.google", "com.android.chrome", "com.android.vending", "com.facebook",
+            "com.instagram", "com.whatsapp", "com.twitter", "com.linkedin", "com.snapchat",
+            "com.amazon", "com.microsoft", "com.apple", "com.dropbox", "com.mozilla",
+            "com.brave", "com.duckduckgo", "com.vivaldi", "com.kiwibrowser",
+            "org.torproject.torbrowser", "com.opera.browser", "com.lemon.browser",
+            "net.waterfox", "ch.protonmail", "org.thoughtcrime.securesms", "org.telegram",
+            "com.surfshark", "com.netflix", "com.spotify", "tv.twitch", "com.hulu",
+            "com.disney", "com.hbo", "com.primevideo", "com.zhiliaoapp.musically",
+            "com.nytimes", "bbc.mobile", "com.wsj", "com.bloomberg", "com.medium",
+            "com.quora", "com.github", "io.github", "com.slack", "com.notion", "us.zoom",
+            "com.discord", "com.reddit", "com.pinterest", "com.tumblr", "jp.naver.line",
+            "com.skype", "com.box", "org.wikipedia", "com.gitlab", "com.openai",
+            "com.valvesoftware", "com.roblox", "com.ea.gp", "com.ubisoft",
+            "com.sogou.activity.src", "com.qihoo.browser", "com.qihoo.haosou",
+            "com.liebao", "com.mx.browser", "com.browser2345", "com.ijinshan.browser",
+            "com.quark.browser", "com.ylmf.androidclient", "mark.via", "com.xbrowser.play",
+            "com.mycompany.app.soulbrowser", "com.hshentong.alook", "info.bmmk.mbrowser",
+            "com.rainsee.browser", "com.liuzh.browser", "com.yuzhe.browser",
+            "org.easyweb.browser", "any.browser", "us.spotco.fennec_dos",
+            "app.grapheneos.vanadium", "org.ironfoxoss", "com.samsung.android.app.sbrowser",
+            "com.mi.global.browser", "com.android.browser", "com.huawei.browser",
+            "com.hihonor.browser", "com.heytap.browser", "com.coloros.browser",
+            "com.oppo.browser", "com.vivo.browser", "com.bbk.browser", "com.meizu.browser",
+            "com.meizu.mbrowser", "com.lenovo.browser", "com.zte.browser", "com.gionee.browser"
+        )
+
+        private val CHINA_APP_PREFIX_LIST = listOf(
+            "com.tencent", "com.alibaba", "com.ali", "com.alipay", "com.taobao", "com.baidu",
+            "com.iqiyi", "com.bytedance", "com.ss.android", "com.kuaishou", "com.smile.gifmaker",
+            "com.xunmeng", "com.pinduoduo", "com.sankuai", "com.meituan", "com.jingdong",
+            "com.jd", "tv.danmaku", "com.sina", "com.weibo", "com.sohu", "com.netease",
+            "com.zhihu", "com.xingin", "com.huawei", "com.xiaomi", "com.miui", "com.oppo",
+            "com.coloros", "com.oplus", "andes.oplus", "com.vivo", "com.bbk", "com.iqoo",
+            "com.meizu", "com.flyme", "com.gionee", "cn.nubia", "com.zte", "com.lenovo",
+            "com.oneplus", "com.qihoo", "com.360", "com.ijiami", "com.bangcle", "com.secneo",
+            "com.kiwisec", "com.stub", "com.wrapper", "cn.securitystack", "com.mogosec",
+            "com.secoen", "com.secshell", "com.umeng", "com.igexin", "cn.jpush", "cn.jiguang",
+            "com.bugly", "com.mob", "cn.wps", "com.kingsoft", "com.xunlei", "com.unionpay",
+            "com.cainiao", "com.sf", "com.sdu", "com.xiaojukeji", "com.autonavi", "com.amap",
+            "com.chinamobile", "com.chinaunicom", "com.chinatelecom", "com.icbc", "com.ccb",
+            "com.cmbchina", "com.mx", "com.qq", "app.eleven.com.fastfiletransfer",
+            "org.localsend.localsend_app"
+        )
+
+        private val CHINA_APP_REGEX by lazy {
+            ("(" + CHINA_APP_PREFIX_LIST.joinToString("|").replace(".", "\\.") + ").*").toRegex()
+        }
     }
 
-    private var floatingIme = false
+    private var isBlockNotification = false
+    private var isActivityAttached = false
 
-    // A TV keyboard floats over the app and reports a zero-height IME inset.
-    private val imeInsetsListener = OnApplyWindowInsetsListener { view, insets ->
-        val ime = WindowInsetsCompat.Type.ime()
-        reportFloatingIme(insets.isVisible(ime) && insets.getInsets(ime).bottom == 0)
-        ViewCompat.onApplyWindowInsets(view, insets)
+    override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
+        scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+        channel = MethodChannel(flutterPluginBinding.binaryMessenger, "app")
+        channel.setMethodCallHandler(this)
+        scope.launch(Dispatchers.IO) { cleanIconCache() }
     }
 
-    private val mainHandler = Handler(Looper.getMainLooper())
+    private fun createBitmapIcon(context: Context, resId: Int): IconCompat {
+        val drawable = androidx.core.content.ContextCompat.getDrawable(context, resId)
+            ?: return IconCompat.createWithResource(context, resId)
+        val bitmap = android.graphics.Bitmap.createBitmap(
+            if (drawable.intrinsicWidth <= 0) 108 else drawable.intrinsicWidth,
+            if (drawable.intrinsicHeight <= 0) 108 else drawable.intrinsicHeight,
+            android.graphics.Bitmap.Config.ARGB_8888
+        )
+        val canvas = android.graphics.Canvas(bitmap)
+        drawable.setBounds(0, 0, canvas.width, canvas.height)
+        drawable.draw(canvas)
+        return IconCompat.createWithBitmap(bitmap)
+    }
 
-    /**
-     * The permission and consent hops below touch the Activity — starting an
-     * activity for result, raising a permission prompt — and read the state that
-     * tracks whether one is already up. Their callers are coroutines on
-     * [Dispatchers.Default], while the answers come back on the main thread
-     * through the ActivityAware listeners, so main is the one thread both ends
-     * can agree on. A plain main-looper post rather than the plugin scope: the
-     * scope is cancelled when the engine detaches, and a request dropped there
-     * would leave its caller waiting for a callback that can no longer run.
-     */
-    private fun onMainThread(block: () -> Unit) {
-        if (Looper.myLooper() == Looper.getMainLooper()) {
-            block()
-        } else {
-            mainHandler.post(block)
+    private fun initShortcuts(labels: Map<*, *>) {
+        val toggleShortcut = ShortcutInfoCompat.Builder(BettboxApplication.getAppContext(), "toggle")
+            .setShortLabel(labels["toggle"]?.toString() ?: "Toggle")
+            .setIcon(createBitmapIcon(BettboxApplication.getAppContext(), R.drawable.ic_shortcut_toggle))
+            .setIntent(BettboxApplication.getAppContext().getActionIntent("CHANGE"))
+            .build()
+
+        val startShortcut = ShortcutInfoCompat.Builder(BettboxApplication.getAppContext(), "start")
+            .setShortLabel(labels["start"]?.toString() ?: "Start")
+            .setIcon(createBitmapIcon(BettboxApplication.getAppContext(), R.drawable.ic_shortcut_start))
+            .setIntent(BettboxApplication.getAppContext().getActionIntent("START"))
+            .build()
+
+        val stopShortcut = ShortcutInfoCompat.Builder(BettboxApplication.getAppContext(), "stop")
+            .setShortLabel(labels["stop"]?.toString() ?: "Stop")
+            .setIcon(createBitmapIcon(BettboxApplication.getAppContext(), R.drawable.ic_shortcut_stop))
+            .setIntent(BettboxApplication.getAppContext().getActionIntent("STOP"))
+            .build()
+
+        ShortcutManagerCompat.setDynamicShortcuts(
+            BettboxApplication.getAppContext(), 
+            listOf(startShortcut, stopShortcut, toggleShortcut)
+        )
+    }
+
+    private fun isSystemInDarkMode(): Boolean {
+        val nightModeFlags = BettboxApplication.getAppContext().resources.configuration.uiMode and
+            Configuration.UI_MODE_NIGHT_MASK
+        return nightModeFlags == Configuration.UI_MODE_NIGHT_YES
+    }
+
+    private fun isAndroidTV(): Boolean {
+        val uiMode = BettboxApplication.getAppContext().resources.configuration.uiMode
+        return (uiMode and Configuration.UI_MODE_TYPE_MASK) == Configuration.UI_MODE_TYPE_TELEVISION
+    }
+
+    override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
+        channel.setMethodCallHandler(null)
+        scope.cancel()
+    }
+
+    private fun tip(message: String?) {
+        if (GlobalState.flutterEngine == null) {
+            Toast.makeText(BettboxApplication.getAppContext(), message, Toast.LENGTH_LONG).show()
         }
     }
 
     override fun onMethodCall(call: MethodCall, result: Result) {
         when (call.method) {
             "moveTaskToBack" -> {
-                activity?.moveTaskToBack(true)
+                activityRef?.get()?.moveTaskToBack(true)
                 result.success(true)
             }
-
             "updateExcludeFromRecents" -> {
-                val value = call.argument<Boolean>("value")
-                updateExcludeFromRecents(value)
+                updateExcludeFromRecents(call.argument<Boolean>("value"))
                 result.success(true)
             }
-
             "initShortcuts" -> {
-                val labels = shortcutLabels(call.arguments)
-                if (labels == null) {
-                    result.error(
-                        "INVALID_ARGUMENT",
-                        "Shortcut labels must map every quick action to a string",
-                        null,
-                    )
-                } else {
-                    initShortcuts(labels)
-                    result.success(true)
-                }
+                val labels = call.arguments as? Map<String, String> ?: emptyMap()
+                initShortcuts(labels)
+                result.success(true)
             }
-
-            "getPackages" -> reply(result) {
-                gson.toJson(packageResolver.installedPackages)
+            "getPackages" -> scope.launch {
+                val forceRefresh = call.argument<Boolean>("forceRefresh") ?: false
+                runCatching { result.success(getPackagesToList(forceRefresh)) }
+                    .onFailure { result.error("GET_PACKAGES_FAILED", it.message, null) }
             }
-
-            "getChinaPackageNames" -> reply(result) {
-                gson.toJson(packageResolver.getChinaPackageNames())
+            "getChinaPackageNames" -> scope.launch {
+                runCatching { result.success(getChinaPackageNamesList()) }
+                    .onFailure { result.error("GET_CHINA_PACKAGES_FAILED", it.message, null) }
             }
-
-            "isInstalledAppsPermissionGranted" -> reply(result) {
-                packageResolver.hasInstalledAppsPermission()
+            "getPackageIcon" -> scope.launch {
+                val packageName = call.argument<String>("packageName")
+                val forceRefresh = call.argument<Boolean>("forceRefresh") ?: false
+                val icon = runCatching {
+                    packageName?.let { 
+                        getPackageIconBytes(it, forceRefresh) 
+                    } ?: getDefaultIconBytes()
+                }.getOrNull() ?: getDefaultIconBytes()
+                result.success(icon)
             }
-
-            "requestInstalledAppsPermission" -> {
-                requestInstalledAppsPermission { granted -> result.success(granted) }
-            }
-
-            "requestLocalNetworkPermission" -> {
-                requestLocalNetworkPermission { granted -> result.success(granted) }
-            }
-
-            "getPackageIcon" -> {
-                handleGetPackageIcon(call, result)
-            }
-
             "tip" -> {
-                val message = call.argument<String>("message")
-                GlobalState.application.showToast(message)
+                tip(call.argument<String>("message"))
                 result.success(true)
             }
-
+            "getSelfLastUpdateTime" -> {
+                result.success(getSelfLastUpdateTime())
+            }
+            "isIgnoringBatteryOptimizations" -> {
+                result.success(isIgnoringBatteryOptimizations())
+            }
+            "requestIgnoreBatteryOptimizations" -> {
+                requestIgnoreBatteryOptimizations()
+                result.success(true)
+            }
+            "setLauncherIcon" -> {
+                setLauncherIcon(call.argument<Boolean>("useDarkIcon") ?: false)
+                result.success(true)
+            }
+            "hasPackageListPermission" -> {
+                result.success(hasPackageListPermission())
+            }
+            "requestPackageListPermission" -> {
+                requestPackageListPermission()
+                result.success(true)
+            }
+            "hasCameraPermission" -> {
+                result.success(hasCameraPermission())
+            }
             "openAppSettings" -> {
-                result.success(openAppSettings())
-            }
-
-            "getLastExitInfo" -> reply(result) {
-                GlobalState.lastExitInfo()
-            }
-
-            "updateThemeMode" -> {
-                val mode = call.argument<String>("mode") ?: "system"
-                updateAppIconAndTheme(mode)
+                openAppSettings()
                 result.success(true)
             }
-
-            else -> {
-                result.notImplemented()
+            "isAndroidTV" -> {
+                result.success(isAndroidTV())
             }
-        }
-    }
-
-    private fun handleGetPackageIcon(call: MethodCall, result: Result) = reply(result) {
-        val packageName = call.argument<String>("packageName") ?: ""
-        GlobalState.application.packageManager.getPackageIconPath(packageName)
-    }
-
-    // A throw inside the plugin scope has no handler and ends the process;
-    // the Dart caller gets a PlatformException to handle instead.
-    private fun reply(result: Result, block: suspend () -> Any?) {
-        scope.launch(Dispatchers.IO) {
-            try {
-                result.success(block())
-            } catch (error: Exception) {
-                GlobalState.log("Platform call failed: $error")
-                result.error("PLATFORM_ERROR", error.toString(), null)
+            "openFcmDiagnostics" -> {
+                result.success(openFcmDiagnostics())
             }
+            else -> result.notImplemented()
         }
     }
 
-    private fun shortcutLabels(arguments: Any?): Map<QuickAction, String>? {
-        val map = arguments as? Map<*, *> ?: return null
-        return QuickAction.entries.associateWith { action ->
-            map[action.shortcutId] as? String ?: return null
+    private fun openFcmDiagnostics(): Boolean {
+        val context = BettboxApplication.getAppContext()
+        val intent = Intent().apply {
+            component = ComponentName("com.google.android.gms", "com.google.android.gms.gcm.GcmDiagnostics")
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
-    }
-
-    private fun initShortcuts(labels: Map<QuickAction, String>) {
-        val shortcuts = SHORTCUT_ORDER.mapIndexed { rank, action ->
-            with(ShortcutInfoCompat.Builder(GlobalState.application, action.shortcutId)) {
-                setShortLabel(labels.getValue(action))
-                setIcon(IconCompat.createWithResource(GlobalState.application, action.shortcutIcon))
-                setIntent(action.quickIntent)
-                setRank(rank)
-                build()
-            }
-        }
-        ShortcutManagerCompat.setDynamicShortcuts(GlobalState.application, shortcuts)
-    }
-
-    // Plain circles, not adaptive icons: an adaptive shortcut icon takes the
-    // launcher's own mask, which is a square on many devices.
-    private val QuickAction.shortcutIcon: Int
-        get() = when (this) {
-            QuickAction.START -> R.drawable.ic_shortcut_start
-            QuickAction.STOP -> R.drawable.ic_shortcut_stop
-            QuickAction.TOGGLE -> R.drawable.ic_shortcut_toggle
-        }
-
-    private fun openAppSettings(): Boolean {
-        val activity = activity ?: return false
-        return try {
-            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                data = "package:${GlobalState.application.packageName}".toUri()
-            }
-            activity.startActivity(intent)
+        return runCatching {
+            context.startActivity(intent)
             true
-        } catch (_: Exception) {
-            false
-        }
+        }.getOrElse { false }
     }
 
-    @Suppress("DEPRECATION")
     private fun updateExcludeFromRecents(value: Boolean?) {
-        val taskId = activity?.taskId ?: return
-        val am = getSystemService(GlobalState.application, ActivityManager::class.java)
-        val task = am?.appTasks?.firstOrNull {
+        val am = BettboxApplication.getAppContext().getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
+        val task = am?.appTasks?.firstOrNull { task ->
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                it.taskInfo?.taskId == taskId
-            } else {
-                it.taskInfo?.id == taskId
-            }
-        }
-        task?.setExcludeFromRecents(value ?: false)
-    }
-
-    fun requestNotificationPermission(callback: (Boolean) -> Unit) = onMainThread {
-        requestNotificationCallback.replace(callback, supersededValue = false)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            val permission = ContextCompat.checkSelfPermission(
-                GlobalState.application,
-                Manifest.permission.POST_NOTIFICATIONS,
-            )
-            if (permission == PackageManager.PERMISSION_GRANTED || skipNotificationPermissionRequest) {
-                invokeRequestNotificationCallback(true)
-                return@onMainThread
-            }
-            if (isRequestingNotificationPermission) {
-                return@onMainThread
-            }
-            isRequestingNotificationPermission = true
-            activity?.let {
-                ActivityCompat.requestPermissions(
-                    it,
-                    arrayOf(Manifest.permission.POST_NOTIFICATIONS),
-                    NOTIFICATION_PERMISSION_REQUEST_CODE,
-                )
-            } ?: invokeRequestNotificationCallback(true)
-            return@onMainThread
-        }
-        invokeRequestNotificationCallback(true)
-    }
-
-    private fun invokeRequestNotificationCallback(shouldStart: Boolean) {
-        isRequestingNotificationPermission = false
-        requestNotificationCallback.resolve(shouldStart)
-    }
-
-    fun requestLocalNetworkPermission(callback: (Boolean) -> Unit) = onMainThread {
-        requestLocalNetworkCallback.replace(callback, supersededValue = false)
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.CINNAMON_BUN || hasLocalNetworkPermission()) {
-            invokeRequestLocalNetworkCallback(true)
-            return@onMainThread
-        }
-        if (skipLocalNetworkPermissionRequest) {
-            invokeRequestLocalNetworkCallback(false)
-            return@onMainThread
-        }
-        if (isRequestingLocalNetworkPermission) {
-            return@onMainThread
-        }
-        val activity = activity
-        if (activity == null) {
-            invokeRequestLocalNetworkCallback(false)
-            return@onMainThread
-        }
-        isRequestingLocalNetworkPermission = true
-        ActivityCompat.requestPermissions(
-            activity,
-            arrayOf(Manifest.permission.ACCESS_LOCAL_NETWORK),
-            LOCAL_NETWORK_PERMISSION_REQUEST_CODE,
-        )
-    }
-
-    private fun hasLocalNetworkPermission(): Boolean = ContextCompat.checkSelfPermission(
-        GlobalState.application,
-        Manifest.permission.ACCESS_LOCAL_NETWORK,
-    ) == PackageManager.PERMISSION_GRANTED
-
-    private fun invokeRequestLocalNetworkCallback(granted: Boolean) {
-        isRequestingLocalNetworkPermission = false
-        requestLocalNetworkCallback.resolve(granted)
-    }
-
-    private fun requestInstalledAppsPermission(callback: (Boolean) -> Unit) = onMainThread {
-        requestInstalledAppsCallback.replace(callback, supersededValue = false)
-        val activity = activity
-        if (packageResolver.hasInstalledAppsPermission()) {
-            invokeRequestInstalledAppsCallback(true)
-            return@onMainThread
-        }
-        if (activity == null) {
-            invokeRequestInstalledAppsCallback(false)
-            return@onMainThread
-        }
-        ActivityCompat.requestPermissions(
-            activity,
-            arrayOf(PackageResolver.GET_INSTALLED_APPS),
-            INSTALLED_APPS_PERMISSION_REQUEST_CODE,
-        )
-    }
-
-    private fun invokeRequestInstalledAppsCallback(granted: Boolean) {
-        if (granted) {
-            packageResolver.invalidate()
-        }
-        requestInstalledAppsCallback.resolve(granted)
-    }
-
-    fun prepareVpn(needPrepare: Boolean, callback: (Boolean) -> Unit) = onMainThread {
-        vpnPrepareCallback.replace(callback, supersededValue = false)
-        if (!needPrepare) {
-            invokeVpnPrepareCallback(true)
-            return@onMainThread
-        }
-        val intent = VpnService.prepare(GlobalState.application)
-        if (intent != null) {
-            val activity = activity
-            if (activity == null) {
-                invokeVpnPrepareCallback(false)
+                task.taskInfo.taskId == activityRef?.get()?.taskId
             } else {
                 @Suppress("DEPRECATION")
-                activity.startActivityForResult(intent, VPN_PERMISSION_REQUEST_CODE)
+                task.taskInfo.id == activityRef?.get()?.taskId
             }
-            return@onMainThread
         }
-        invokeVpnPrepareCallback(true)
-    }
 
-    // Posted rather than run where the cancellation lands, so it stays ordered
-    // behind the prepareVpn that installed the callback it is cancelling.
-    fun cancelVpnPreparation(callback: (Boolean) -> Unit) = onMainThread {
-        vpnPrepareCallback.cancel(callback)
-    }
-
-    private fun invokeVpnPrepareCallback(granted: Boolean) {
-        vpnPrepareCallback.resolve(granted)
-    }
-
-    override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
-        scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-        channel =
-            MethodChannel(flutterPluginBinding.binaryMessenger, "${Components.PACKAGE_NAME}/app")
-        channel.setMethodCallHandler(this)
-        watchPackageChanges(flutterPluginBinding.applicationContext)
-    }
-
-    private fun watchPackageChanges(context: Context) {
-        val filter = IntentFilter().apply {
-            addAction(Intent.ACTION_PACKAGE_ADDED)
-            addAction(Intent.ACTION_PACKAGE_REPLACED)
-            addAction(Intent.ACTION_PACKAGE_FULLY_REMOVED)
-            addDataScheme("package")
+        when (value) {
+            true -> task?.setExcludeFromRecents(value)
+            false -> task?.setExcludeFromRecents(value)
+            null -> task?.setExcludeFromRecents(false)
         }
-        context.registerReceiverCompat(packageChangeReceiver, filter)
-        packageChangeContext = context
     }
 
-    override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
-        packageChangeContext?.unregisterReceiver(packageChangeReceiver)
-        packageChangeContext = null
-        channel.setMethodCallHandler(null)
-        scope.cancel()
-        invokeVpnPrepareCallback(false)
-        invokeRequestNotificationCallback(false)
-        invokeRequestLocalNetworkCallback(false)
-        invokeRequestInstalledAppsCallback(false)
+    private fun getIconSizePx(): Int {
+        val density = BettboxApplication.getAppContext().resources.displayMetrics.density
+        return (ICON_SIZE_DP * density).toInt().coerceAtLeast(1)
     }
 
-    override fun onAttachedToActivity(binding: ActivityPluginBinding) {
-        attachToActivity(binding)
+    private fun drawableToPngBytes(drawable: Drawable, sizePx: Int): ByteArray {
+        val bitmap = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        drawable.setBounds(0, 0, sizePx, sizePx)
+        drawable.draw(canvas)
+        return java.io.ByteArrayOutputStream().use { outputStream ->
+            bitmap.compress(Bitmap.CompressFormat.PNG, 80, outputStream)
+            bitmap.recycle()
+            outputStream.toByteArray()
+        }
     }
 
-    private fun attachToActivity(binding: ActivityPluginBinding) {
-        detachFromActivity()
-        activityBinding = binding
-        activity = binding.activity
-        binding.addActivityResultListener(activityResultListener)
-        binding.addRequestPermissionsResultListener(permissionsResultListener)
-        if (isTelevision) {
-            ViewCompat.setOnApplyWindowInsetsListener(
-                binding.activity.window.decorView,
-                imeInsetsListener,
+    private fun getDefaultIconBytes(): ByteArray? = runCatching {
+        drawableToPngBytes(BettboxApplication.getAppContext().packageManager.defaultActivityIcon, getIconSizePx())
+    }.getOrNull()
+
+    private fun isPngBytes(bytes: ByteArray): Boolean {
+        if (bytes.size < PNG_MAGIC_SIZE) return false
+        val magic = byteArrayOf(0x89.toByte(), 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A)
+        return bytes.take(PNG_MAGIC_SIZE).toByteArray().contentEquals(magic)
+    }
+
+    private suspend fun getPackageIconBytes(packageName: String, forceRefresh: Boolean = false): ByteArray? =
+        withContext(Dispatchers.IO) {
+            val pm = BettboxApplication.getAppContext().packageManager ?: return@withContext null
+            runCatching {
+                val packageInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    pm.getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(0))
+                } else {
+                    pm.getPackageInfo(packageName, 0)
+                }
+                val lastUpdateTime = packageInfo?.lastUpdateTime ?: 0L
+                val cacheKey = "${packageName}_${lastUpdateTime}"
+                val cacheFile = File(iconCacheDir, cacheKey)
+
+                if (forceRefresh && cacheFile.exists() && (System.currentTimeMillis() - lastUpdateTime) < 24 * 60 * 60 * 1000) {
+                    cacheFile.delete()
+                }
+
+                if (cacheFile.exists() && cacheFile.length() > 0) {
+                    val cachedBytes = cacheFile.readBytes()
+                    if (isPngBytes(cachedBytes)) return@withContext cachedBytes
+                    cacheFile.delete()
+                }
+
+                iconCacheDir.listFiles()?.forEach { if (it.name.startsWith("${packageName}_") && it.name != cacheKey) it.delete() }
+
+                pm.getApplicationIcon(packageName)?.let { drawable ->
+                    val bytes = drawableToPngBytes(drawable, getIconSizePx())
+                    runCatching { cacheFile.writeBytes(bytes) }
+                    return@withContext bytes
+                }
+            }
+            null
+        }
+
+    private suspend fun getPackages(forceRefresh: Boolean = false): List<Package> = packagesMutex.withLock {
+        if (!forceRefresh && packages.isNotEmpty()) return@withLock packages
+        packages = withContext(Dispatchers.IO) { loadPackages() }
+        packages
+    }
+
+    private suspend fun loadPackages(): List<Package> = coroutineScope {
+        val pm = BettboxApplication.getAppContext().packageManager ?: return@coroutineScope emptyList()
+        val selfPackageName = BettboxApplication.getAppContext().packageName
+        val packageInfos = pm.getInstalledPackages(0)
+        val chunkSize = packageInfos.size / Runtime.getRuntime().availableProcessors() + 1
+
+        packageInfos.chunked(chunkSize).map { chunk ->
+            async {
+                chunk.mapNotNull { packageInfo ->
+                    val packageName = packageInfo.packageName ?: return@mapNotNull null
+                    if (packageName == selfPackageName) return@mapNotNull null
+                    val appInfo = packageInfo.applicationInfo ?: return@mapNotNull null
+
+                    val label = runCatching { appInfo.loadLabel(pm).toString() }.getOrDefault(packageName)
+                    val system = (appInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0
+                    val internet = runCatching {
+                        pm.checkPermission(Manifest.permission.INTERNET, packageName) == PackageManager.PERMISSION_GRANTED
+                    }.getOrDefault(false)
+                    val firstInstallTime = packageInfo.firstInstallTime
+                    val lastUpdateTime = packageInfo.lastUpdateTime.takeIf { it > 0 } ?: firstInstallTime
+
+                    Package(packageName, label, system, internet, firstInstallTime, lastUpdateTime)
+                }
+            }
+        }.awaitAll().flatten()
+    }
+
+    private suspend fun getPackagesToList(forceRefresh: Boolean = false): List<Map<String, Any>> =
+        getPackages(forceRefresh).map {
+            mapOf(
+                "packageName" to it.packageName,
+                "label" to it.label,
+                "system" to it.system,
+                "internet" to it.internet,
+                "firstInstallTime" to it.firstInstallTime,
+                "lastUpdateTime" to it.lastUpdateTime
             )
         }
-    }
 
-    private fun detachFromActivity() {
-        if (isTelevision) {
-            activity?.window?.decorView?.let {
-                ViewCompat.setOnApplyWindowInsetsListener(it, null)
+    private suspend fun getChinaPackageNamesList(): List<String> =
+        getPackages().map { it.packageName }.filter { isChinaPackage(it) }
+
+    private fun cleanIconCache() {
+        runCatching {
+            iconCacheDir.listFiles()?.takeIf { it.size > CACHE_MAX_FILES }?.let { files ->
+                files.sortedBy { it.lastModified() }.take(files.size - CACHE_MAX_FILES).forEach { it.delete() }
             }
-            reportFloatingIme(false)
         }
-        activity = null
-        val binding = activityBinding ?: return
-        activityBinding = null
-        binding.removeActivityResultListener(activityResultListener)
-        binding.removeRequestPermissionsResultListener(permissionsResultListener)
     }
 
-    private fun reportFloatingIme(floating: Boolean) {
-        if (floating == floatingIme) {
-            return
+    fun requestVpnPermission(callBack: () -> Unit) {
+        vpnCallBack = callBack
+        val intent = runCatching { VpnService.prepare(BettboxApplication.getAppContext()) }.getOrNull()
+        if (intent != null) {
+            val activity = activityRef?.get()
+            if (activity != null) {
+                runCatching {
+                    activity.startActivityForResult(intent, VPN_PERMISSION_REQUEST_CODE)
+                }.onFailure { e ->
+                    android.util.Log.e("AppPlugin", "startActivityForResult for VPN permission failed: ${e.message}")
+                    vpnCallBack?.invoke()
+                }
+                return
+            }
         }
-        floatingIme = floating
-        channel.invokeMethod("floatingImeChanged", floating)
+        vpnCallBack?.invoke()
+    }
+
+    fun requestNotificationsPermission() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
+        if (isBlockNotification || activityRef?.get() == null) return
+        if (ContextCompat.checkSelfPermission(BettboxApplication.getAppContext(), Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) return
+        activityRef?.get()?.let {
+            ActivityCompat.requestPermissions(it, arrayOf(Manifest.permission.POST_NOTIFICATIONS), NOTIFICATION_PERMISSION_REQUEST_CODE)
+        }
+    }
+
+    suspend fun getText(text: String): String? = withContext(Dispatchers.Default) {
+        channel.awaitResult<String>("getText", text)
+    }
+
+    private fun isChinaPackage(packageName: String): Boolean =
+        chinaPackageCache.getOrPut(packageName) { isChinaPackageInternal(packageName) }
+
+    private fun isChinaPackageInternal(packageName: String): Boolean {
+        val context = BettboxApplication.getAppContext()
+        val pm = context.packageManager ?: return false
+        if (SKIP_PREFIX_LIST.any { packageName == it || packageName.startsWith("$it.") }) return false
+        if (packageName.matches(CHINA_APP_REGEX)) return true
+        if (isChinaCertificate(packageName, pm)) return true
+
+        val flags = PackageManager.GET_ACTIVITIES or PackageManager.GET_SERVICES or PackageManager.GET_RECEIVERS or PackageManager.GET_PROVIDERS
+        runCatching {
+            val packageInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                pm.getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(flags.toLong()))
+            } else {
+                pm.getPackageInfo(packageName, flags)
+            }
+            val components = mutableListOf<ComponentInfo>().apply {
+                packageInfo.services?.let { addAll(it) }
+                packageInfo.activities?.let { addAll(it) }
+                packageInfo.receivers?.let { addAll(it) }
+                packageInfo.providers?.let { addAll(it) }
+            }
+            if (components.any { it.name.matches(CHINA_APP_REGEX) }) return true
+        }
+        return false
+    }
+
+    private fun isChinaCertificate(packageName: String, pm: PackageManager): Boolean = runCatching {
+        val packageInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            pm.getPackageInfo(packageName, PackageManager.GET_SIGNING_CERTIFICATES)
+        } else {
+            @Suppress("DEPRECATION")
+            pm.getPackageInfo(packageName, PackageManager.GET_SIGNATURES)
+        }
+        val signatures = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            packageInfo.signingInfo?.apkContentsSigners
+        } else {
+            @Suppress("DEPRECATION")
+            packageInfo.signatures
+        }
+        signatures?.any { signature ->
+            val cert = CertificateFactory.getInstance("X.509")
+                .generateCertificate(java.io.ByteArrayInputStream(signature.toByteArray()))
+            cert is X509Certificate && (cert.subjectDN.name.contains("C=CN", ignoreCase = true) ||
+                cert.subjectDN.name.contains("C=86", ignoreCase = true))
+        } == true
+    }.getOrDefault(false)
+
+    override fun onAttachedToActivity(binding: ActivityPluginBinding) {
+        activityRef = WeakReference(binding.activity)
+        if (!isActivityAttached) {
+            isActivityAttached = true
+            binding.addActivityResultListener(::onActivityResult)
+            binding.addRequestPermissionsResultListener(::onRequestPermissionsResultListener)
+        }
     }
 
     override fun onDetachedFromActivityForConfigChanges() {
-        detachFromActivity()
+        activityRef = null
     }
-
     override fun onReattachedToActivityForConfigChanges(binding: ActivityPluginBinding) {
-        attachToActivity(binding)
+        activityRef = WeakReference(binding.activity)
     }
-
     override fun onDetachedFromActivity() {
         channel.invokeMethod("exit", null)
-        detachFromActivity()
-        invokeVpnPrepareCallback(false)
-        invokeRequestNotificationCallback(false)
-        invokeRequestLocalNetworkCallback(false)
-        invokeRequestInstalledAppsCallback(false)
+        activityRef = null
+        cachedTaskId = null
+        isActivityAttached = false
     }
 
     private fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?): Boolean {
-        if (requestCode != VPN_PERMISSION_REQUEST_CODE) {
-            return false
+        if (!isActivityAttached) return false
+        if (requestCode == VPN_PERMISSION_REQUEST_CODE && resultCode == FlutterActivity.RESULT_OK) {
+            GlobalState.initServiceEngine()
+            vpnCallBack?.invoke()
         }
-        invokeVpnPrepareCallback(resultCode == Activity.RESULT_OK)
         return true
     }
 
-    private fun onRequestPermissionsResultListener(
-        requestCode: Int,
-        permissions: Array<String>,
-        grantResults: IntArray,
-    ): Boolean = when (requestCode) {
-        NOTIFICATION_PERMISSION_REQUEST_CODE -> {
-            skipNotificationPermissionRequest = true
-            invokeRequestNotificationCallback(true)
-            true
-        }
-
-        INSTALLED_APPS_PERMISSION_REQUEST_CODE -> {
-            invokeRequestInstalledAppsCallback(
-                grantResults.isNotEmpty() &&
-                    grantResults[0] == PackageManager.PERMISSION_GRANTED,
-            )
-            true
-        }
-
-        LOCAL_NETWORK_PERMISSION_REQUEST_CODE -> {
-            skipLocalNetworkPermissionRequest = true
-            invokeRequestLocalNetworkCallback(
-                grantResults.isNotEmpty() &&
-                    grantResults[0] == PackageManager.PERMISSION_GRANTED,
-            )
-            true
-        }
-
-        else -> false
+    private fun onRequestPermissionsResultListener(requestCode: Int, permissions: Array<String>, grantResults: IntArray): Boolean {
+        if (!isActivityAttached) return false
+        if (requestCode == NOTIFICATION_PERMISSION_REQUEST_CODE) isBlockNotification = true
+        return true
     }
 
-    private companion object {
-        val SHORTCUT_ORDER = listOf(QuickAction.START, QuickAction.STOP, QuickAction.TOGGLE)
-        const val VPN_PERMISSION_REQUEST_CODE = 1001
-        const val NOTIFICATION_PERMISSION_REQUEST_CODE = 1002
-        const val INSTALLED_APPS_PERMISSION_REQUEST_CODE = 1003
-        const val LOCAL_NETWORK_PERMISSION_REQUEST_CODE = 1004
-    }
-    private fun updateAppIconAndTheme(mode: String) {
-        val context = activity ?: GlobalState.application
-        try {
-            val prefs = context.getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
-            prefs.edit().putString("flutter.themeMode", mode).apply()
+    private fun isIgnoringBatteryOptimizations(): Boolean =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val powerManager = BettboxApplication.getAppContext().getSystemService(android.content.Context.POWER_SERVICE) as? android.os.PowerManager
+            powerManager?.isIgnoringBatteryOptimizations(BettboxApplication.getAppContext().packageName) ?: false
+        } else true
 
-            val pm = context.packageManager
-            val pkgName = context.packageName
-
-            val mainComponent = android.content.ComponentName(pkgName, "$pkgName.MainActivity")
-            val defaultComponent = android.content.ComponentName(pkgName, "$pkgName.MainActivityDefault")
-            val lightComponent = android.content.ComponentName(pkgName, "$pkgName.MainActivityLight")
-            val darkComponent = android.content.ComponentName(pkgName, "$pkgName.MainActivityDark")
-
-            // Ensure base target activity is always enabled
-            pm.setComponentEnabledSetting(
-                mainComponent,
-                PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
-                PackageManager.DONT_KILL_APP,
-            )
-
-            val (targetComponent, disable1, disable2) = when (mode) {
-                "light" -> Triple(lightComponent, defaultComponent, darkComponent)
-                "dark" -> Triple(darkComponent, defaultComponent, lightComponent)
-                else -> Triple(defaultComponent, lightComponent, darkComponent)
+    private fun requestIgnoreBatteryOptimizations() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return
+        val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+            data = Uri.parse("package:${BettboxApplication.getAppContext().packageName}")
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        runCatching { BettboxApplication.getAppContext().startActivity(intent) }
+            .onFailure {
+                runCatching {
+                    BettboxApplication.getAppContext().startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    })
+                }
             }
+    }
 
+    private fun setLauncherIcon(useDarkIcon: Boolean) {
+        val context = BettboxApplication.getAppContext()
+        val pm = context.packageManager
+        val packageName = context.packageName
+        val defaultComponent = android.content.ComponentName(packageName, "com.outo.app.MainActivity")
+        val lightComponent = android.content.ComponentName(packageName, "com.outo.app.MainActivityLight")
+        val darkComponent = android.content.ComponentName(packageName, "com.outo.app.MainActivityDark")
+
+        if (useDarkIcon) {
+            pm.setComponentEnabledSetting(darkComponent, PackageManager.COMPONENT_ENABLED_STATE_ENABLED, PackageManager.DONT_KILL_APP)
+            pm.setComponentEnabledSetting(defaultComponent, PackageManager.COMPONENT_ENABLED_STATE_DISABLED, PackageManager.DONT_KILL_APP)
+            pm.setComponentEnabledSetting(lightComponent, PackageManager.COMPONENT_ENABLED_STATE_DISABLED, PackageManager.DONT_KILL_APP)
+        } else {
+            pm.setComponentEnabledSetting(defaultComponent, PackageManager.COMPONENT_ENABLED_STATE_ENABLED, PackageManager.DONT_KILL_APP)
+            pm.setComponentEnabledSetting(darkComponent, PackageManager.COMPONENT_ENABLED_STATE_DISABLED, PackageManager.DONT_KILL_APP)
+            pm.setComponentEnabledSetting(lightComponent, PackageManager.COMPONENT_ENABLED_STATE_DISABLED, PackageManager.DONT_KILL_APP)
+        }
+        com.outo.app.services.NotificationComponentCache.invalidate()
+        VpnPlugin.updateNotificationIcon()
+    }
+
+    private fun hasPackageListPermission(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return true
+        val context = BettboxApplication.getAppContext()
+        val pm = context.packageManager
+        return arrayOf("com.android.settings", "com.android.systemui").any { pkg ->
+            runCatching {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    pm.getPackageInfo(pkg, PackageManager.PackageInfoFlags.of(0))
+                } else {
+                    pm.getPackageInfo(pkg, 0)
+                }
+                true
+            }.getOrDefault(false)
+        }
+    }
+
+    private fun requestPackageListPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) openAppSettings()
+    }
+
+    private fun hasCameraPermission(): Boolean =
+        ContextCompat.checkSelfPermission(BettboxApplication.getAppContext(), Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+
+    private fun openAppSettings() {
+        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+            data = Uri.parse("package:${BettboxApplication.getAppContext().packageName}")
+        }
+        activityRef?.get()?.startActivity(intent) ?: run {
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            BettboxApplication.getAppContext().startActivity(intent)
+        }
+    }
+
+    private fun getSelfLastUpdateTime(): Long {
+        val context = BettboxApplication.getAppContext()
+        val pm = context.packageManager
+        return runCatching {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                pm.setComponentEnabledSettings(
-                    listOf(
-                        PackageManager.ComponentEnabledSetting(
-                            targetComponent,
-                            PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
-                            PackageManager.DONT_KILL_APP,
-                        ),
-                        PackageManager.ComponentEnabledSetting(
-                            disable1,
-                            PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
-                            PackageManager.DONT_KILL_APP,
-                        ),
-                        PackageManager.ComponentEnabledSetting(
-                            disable2,
-                            PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
-                            PackageManager.DONT_KILL_APP,
-                        ),
-                    )
-                )
+                pm?.getPackageInfo(context.packageName, PackageManager.PackageInfoFlags.of(0))
             } else {
-                pm.setComponentEnabledSetting(
-                    targetComponent,
-                    PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
-                    PackageManager.DONT_KILL_APP,
-                )
-                pm.setComponentEnabledSetting(
-                    disable1,
-                    PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
-                    PackageManager.DONT_KILL_APP,
-                )
-                pm.setComponentEnabledSetting(
-                    disable2,
-                    PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
-                    PackageManager.DONT_KILL_APP,
-                )
-            }
-        } catch (e: Exception) {
-            GlobalState.log("Failed to update app icon and theme: ${e.message}")
-        }
+                pm?.getPackageInfo(context.packageName, 0)
+            }?.lastUpdateTime
+        }.getOrDefault(0L) ?: 0L
     }
-
 }

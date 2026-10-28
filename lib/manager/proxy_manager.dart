@@ -1,5 +1,6 @@
-import 'package:outo/common/proxy.dart';
-import 'package:outo/providers/state.dart';
+import 'package:bett_box/common/proxy.dart';
+import 'package:bett_box/models/models.dart';
+import 'package:bett_box/providers/state.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -13,12 +14,23 @@ class ProxyManager extends ConsumerStatefulWidget {
 }
 
 class _ProxyManagerState extends ConsumerState<ProxyManager> {
+  Future<void> _updateProxy(ProxyState proxyState) async {
+    final isStart = proxyState.isStart;
+    final systemProxy = proxyState.systemProxy;
+    final port = proxyState.port;
+    if (isStart && systemProxy) {
+      proxy?.startProxy(port, proxyState.bypassDomain);
+    } else {
+      proxy?.stopProxy();
+    }
+  }
+
   @override
   void initState() {
     super.initState();
     ref.listenManual(proxyStateProvider, (prev, next) {
       if (prev != next) {
-        systemProxyQueue?.apply(next);
+        _updateProxy(next);
       }
     }, fireImmediately: true);
   }

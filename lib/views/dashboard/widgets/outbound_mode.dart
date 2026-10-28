@@ -1,172 +1,373 @@
-import 'package:outo/common/common.dart';
-import 'package:outo/enum/enum.dart';
-import 'package:outo/providers/providers.dart';
-import 'package:outo/ui/icons/icons.dart';
-import 'package:outo/ui/ui.dart';
-import 'package:outo/views/dashboard/layout.dart';
-import 'package:outo/views/dashboard/style.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:bett_box/common/common.dart';
+import 'package:bett_box/enum/enum.dart';
+import 'package:bett_box/providers/providers.dart';
+import 'package:bett_box/state.dart';
+import 'package:bett_box/widgets/widgets.dart';
+
+import 'quick_options.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
-import 'card.dart';
-
-Glyph _glyphOf(Mode mode) => switch (mode) {
-  Mode.rule => AppGlyphs.rules,
-  Mode.global => AppGlyphs.proxies,
-  Mode.direct => AppGlyphs.target,
-};
-
-void _changeMode(WidgetRef ref, Mode mode) {
-  if (ref.read(patchClashConfigProvider).mode == mode) return;
-  ref.read(setupActionProvider.notifier).changeMode(mode);
-}
-
-class OutboundModeCard extends ConsumerWidget {
-  const OutboundModeCard({super.key});
-
-  static const _outer = 26.0;
+class OutboundMode extends StatelessWidget {
+  const OutboundMode({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final mode = ref.watch(
-      patchClashConfigProvider.select((state) => state.mode),
-    );
-    final tone = DashboardColors.of(context).tone;
-    final style = AppTextStyle.footnote.of(context, emphasized: true);
-    return DashboardCard(
-      semanticLabel: context.appLocalizations.outboundMode,
-      child: Column(
-        children: [
-          DashboardCardHeader(
-            glyph: AppGlyphs.split,
-            title: context.appLocalizations.outboundMode,
-          ),
-          const SizedBox(height: 12),
-          DashboardConnectedGroup(
-            children: [
-              for (final (index, item) in Mode.values.indexed)
-                Expanded(
-                  child: DashboardConnectedButton(
-                    selected: item == mode,
-                    first: index == 0,
-                    last: index == Mode.values.length - 1,
-                    outer: _outer,
-                    inner: 12,
-                    background: tone,
-                    semanticLabel: item.label,
-                    onTap: () => _changeMode(ref, item),
-                    builder: (foreground) => SizedBox(
-                      height: 52,
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        spacing: 2,
-                        children: [
-                          GlyphIcon(
-                            _glyphOf(item),
-                            size: 18,
-                            color: foreground,
-                          ),
-                          Text(
-                            item.label,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: style.copyWith(color: foreground),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// The desktop control row's mode switch; its buttons sit as far in from the
-/// card's ends as from its edges so their corners stay concentric.
-class OutboundModeBar extends ConsumerWidget {
-  const OutboundModeBar({super.key});
-
-  static const _inset = 8.0;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final density = DashboardDensityScope.of(context);
-    final mode = ref.watch(
-      patchClashConfigProvider.select((state) => state.mode),
-    );
-    final appLocalizations = context.appLocalizations;
-    final outer = dashboardCardRadius(density) - _inset;
-    final style = AppTextStyle.subheadline.of(context, emphasized: true);
-    return DashboardCard(
-      semanticLabel: appLocalizations.outboundMode,
-      padding: EdgeInsetsDirectional.fromSTEB(
-        dashboardCardPadding(density).left,
-        _inset,
-        _inset,
-        _inset,
-      ),
-      child: LayoutBuilder(
-        builder: (context, constraints) => Row(
-          spacing: 16,
-          children: [
-            GlyphIcon(
-              AppGlyphs.split,
-              size: 18,
-              color: context.colorScheme.onSurfaceVariant,
+  Widget build(BuildContext context) {
+    final height = getWidgetHeight(context, 2);
+    return SizedBox(
+      height: height,
+      child: Consumer(
+        builder: (_, ref, _) {
+          final mode = ref.watch(
+            patchClashConfigProvider.select((state) => state.mode),
+          );
+          return CommonCard(
+            info: Info(
+              label: appLocalizations.outboundMode,
+              iconData: Icons.call_split_sharp,
             ),
-            ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: constraints.maxWidth / 4),
-              child: Text(
-                appLocalizations.outboundMode,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: DashboardText.cardTitle(context),
-              ),
-            ),
-            Expanded(
-              child: DashboardConnectedGroup(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+            child: Padding(
+              padding: const EdgeInsets.only(top: 12, bottom: 16),
+              child: Column(
+                mainAxisSize: MainAxisSize.max,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  for (final (index, item) in Mode.values.indexed)
-                    Expanded(
-                      child: DashboardConnectedButton(
-                        selected: item == mode,
-                        first: index == 0,
-                        last: index == Mode.values.length - 1,
-                        outer: outer,
-                        inner: 10,
-                        background: DashboardColors.of(context).tone,
-                        semanticLabel: item.label,
-                        onTap: () => _changeMode(ref, item),
-                        builder: (foreground) => Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          spacing: 6,
-                          children: [
-                            GlyphIcon(
-                              _glyphOf(item),
-                              size: 18,
-                              color: foreground,
-                            ),
-                            Flexible(
-                              child: Text(
-                                item.label,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: style.copyWith(color: foreground),
-                              ),
-                            ),
-                          ],
+                  for (final item in Mode.values)
+                    Flexible(
+                      fit: FlexFit.tight,
+                      child: Material(
+                        color: Colors.transparent,
+                        child: Focus(
+                          child: Builder(
+                            builder: (context) {
+                              final isFocused = Focus.of(context).hasFocus;
+                              return InkWell(
+                                borderRadius: BorderRadius.circular(10),
+                                onTap: () {
+                                  globalState.appController.changeMode(item);
+                                },
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(10),
+                                    color: isFocused && globalState.isAndroidTV
+                                        ? context.colorScheme.primary
+                                              .withValues(alpha: 0.15)
+                                        : Colors.transparent,
+                                    border: isFocused && globalState.isAndroidTV
+                                        ? Border.all(
+                                            color: context.colorScheme.primary,
+                                            width: 2,
+                                          )
+                                        : null,
+                                  ),
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 16.ap,
+                                    vertical: 8.ap,
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        item == mode
+                                            ? Icons.check_circle_rounded
+                                            : Icons.circle_outlined,
+                                        size: 21,
+                                        color: item == mode
+                                            ? context.colorScheme.primary
+                                            : context
+                                                  .colorScheme
+                                                  .onSurfaceVariant
+                                                  .withValues(alpha: 0.6),
+                                      ),
+                                      SizedBox(width: 12.ap),
+                                      Expanded(
+                                        child: Text(
+                                          Intl.message(item.name),
+                                          style: Theme.of(
+                                            context,
+                                          ).textTheme.bodyMedium?.toSoftBold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
                         ),
                       ),
                     ),
                 ],
               ),
             ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class OutboundModeV2 extends StatelessWidget {
+  const OutboundModeV2({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: getWidgetHeight(context, 1),
+      child: CommonCard(
+        padding: EdgeInsets.zero,
+        child: Column(
+          children: [
+            InfoHeader(
+              padding: EdgeInsets.fromLTRB(16.ap, 11.ap, 12.ap, 0),
+              info: Info(
+                label: appLocalizations.runningMode,
+                iconData: Icons.call_split_sharp,
+              ),
+              actions: const [_OutboundStatusChips()],
+            ),
+            Expanded(
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(10.ap, 8.ap, 10.ap, 10.ap),
+                child: Consumer(
+                  builder: (_, ref, _) {
+                    final mode = ref.watch(
+                      patchClashConfigProvider.select((state) => state.mode),
+                    );
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        for (final item in Mode.values) ...[
+                          if (item != Mode.values.first)
+                            const SizedBox(width: 2),
+                          Expanded(
+                            child: _OutboundModeButton(
+                              mode: item,
+                              selected: item == mode,
+                              first: item == Mode.values.first,
+                              last: item == Mode.values.last,
+                            ),
+                          ),
+                        ],
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _OutboundModeButton extends StatelessWidget {
+  final Mode mode;
+  final bool selected;
+  final bool first;
+  final bool last;
+
+  const _OutboundModeButton({
+    required this.mode,
+    required this.selected,
+    required this.first,
+    required this.last,
+  });
+
+  IconData get _icon => switch (mode) {
+    Mode.rule => Icons.list_alt_rounded,
+    Mode.global => Icons.language_rounded,
+    Mode.direct => Icons.east_rounded,
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = context.colorScheme;
+    final isLight = colorScheme.brightness == Brightness.light;
+    final foreground = selected
+        ? colorScheme.primary
+        : colorScheme.onSurfaceVariant.withValues(alpha: 0.82);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final full = Radius.circular(constraints.maxHeight / 2);
+        const inner = Radius.circular(8);
+        final shape = RoundedRectangleBorder(
+          borderRadius: BorderRadius.horizontal(
+            left: selected || first ? full : inner,
+            right: selected || last ? full : inner,
+          ),
+        );
+        return Focus(
+          child: Builder(
+            builder: (context) {
+              final isFocused =
+                  globalState.isAndroidTV && Focus.of(context).hasFocus;
+              return AnimatedContainer(
+                duration: midDuration,
+                curve: Curves.easeOutCubic,
+                decoration: ShapeDecoration(
+                  color: selected
+                      ? colorScheme.primary.withValues(
+                          alpha: isLight ? 0.12 : 0.20,
+                        )
+                      : colorScheme.onSurface.withValues(
+                          alpha: isLight ? 0.04 : 0.06,
+                        ),
+                  shape: shape.copyWith(
+                    side: isFocused
+                        ? BorderSide(color: colorScheme.primary, width: 2)
+                        : BorderSide.none,
+                  ),
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  shape: shape,
+                  clipBehavior: Clip.antiAlias,
+                  child: InkWell(
+                    onTap: () => globalState.appController.changeMode(mode),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(_icon, size: 17, color: foreground),
+                        const SizedBox(width: 6),
+                        Flexible(
+                          child: Text(
+                            Intl.message(mode.name),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: context.textTheme.bodyMedium?.copyWith(
+                              color: foreground,
+                              fontWeight: selected
+                                  ? FontWeight.w600
+                                  : FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _OutboundStatusChips extends ConsumerWidget {
+  const _OutboundStatusChips();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isStart = ref.watch(runTimeProvider.select((value) => value != null));
+    final realTunEnable = ref.watch(realTunEnableProvider);
+    final (tunEnable, systemProxyEnable) = system.isAndroid
+        ? ref.watch(
+            vpnSettingProvider.select(
+              (state) => (state.enable, state.systemProxy),
+            ),
+          )
+        : (
+            ref.watch(
+              patchClashConfigProvider.select((state) => state.tun.enable),
+            ),
+            ref.watch(
+              networkSettingProvider.select((state) => state.systemProxy),
+            ),
+          );
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _StatusChip(
+          label: system.isAndroid ? 'VPN' : 'TUN',
+          active: isStart && tunEnable && (system.isAndroid || realTunEnable),
+          onTap: () =>
+              system.isAndroid ? showVpnSheet(context) : showTunSheet(context),
+        ),
+        const SizedBox(width: 6),
+        _StatusChip(
+          label: appLocalizations.systemProxy,
+          active: isStart && systemProxyEnable,
+          onTap: () => showSystemProxySheet(context),
+        ),
+      ],
+    );
+  }
+}
+
+class _StatusChip extends StatelessWidget {
+  final String label;
+  final bool active;
+  final VoidCallback onTap;
+
+  const _StatusChip({
+    required this.label,
+    required this.active,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = context.colorScheme;
+    final isLight = colorScheme.brightness == Brightness.light;
+    final color = active
+        ? colorScheme.primary
+        : colorScheme.onSurfaceVariant.withValues(alpha: 0.55);
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(8),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: midDuration,
+          padding: const EdgeInsets.fromLTRB(7, 3, 8, 3),
+          decoration: BoxDecoration(
+            color: active
+                ? colorScheme.primary.withValues(alpha: isLight ? 0.12 : 0.20)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: active
+                  ? colorScheme.primary.withValues(alpha: isLight ? 0.28 : 0.36)
+                  : colorScheme.outlineVariant.withValues(
+                      alpha: isLight ? 0.9 : 0.6,
+                    ),
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AnimatedContainer(
+                duration: midDuration,
+                width: 6,
+                height: 6,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: active ? colorScheme.primary : Colors.transparent,
+                  border: Border.all(
+                    color: active
+                        ? colorScheme.primary
+                        : colorScheme.outline.withValues(alpha: 0.8),
+                    width: 1.2,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 5),
+              Text(
+                label,
+                style: context.textTheme.labelSmall?.copyWith(
+                  fontSize: 11,
+                  fontWeight: active ? FontWeight.w600 : FontWeight.w500,
+                  color: color,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -11,7 +11,8 @@ _Package _$PackageFromJson(Map<String, dynamic> json) => _Package(
   label: json['label'] as String,
   system: json['system'] as bool,
   internet: json['internet'] as bool,
-  lastUpdateTime: (json['lastUpdateTime'] as num).toInt(),
+  firstInstallTime: (json['firstInstallTime'] as num?)?.toInt() ?? 0,
+  lastUpdateTime: (json['lastUpdateTime'] as num?)?.toInt() ?? 0,
 );
 
 Map<String, dynamic> _$PackageToJson(_Package instance) => <String, dynamic>{
@@ -19,6 +20,7 @@ Map<String, dynamic> _$PackageToJson(_Package instance) => <String, dynamic>{
   'label': instance.label,
   'system': instance.system,
   'internet': instance.internet,
+  'firstInstallTime': instance.firstInstallTime,
   'lastUpdateTime': instance.lastUpdateTime,
 };
 
@@ -106,15 +108,16 @@ Map<String, dynamic> _$TrackerInfoToJson(_TrackerInfo instance) =>
 
 _Log _$LogFromJson(Map<String, dynamic> json) => _Log(
   logLevel:
-      $enumDecodeNullable(_$LogLevelEnumMap, json['LogLevel']) ?? LogLevel.info,
+      $enumDecodeNullable(_$LogLevelEnumMap, json['LogLevel']) ??
+      LogLevel.error,
   payload: json['Payload'] as String? ?? '',
-  dateTime: _logDateTime(json['dateTime']),
+  time: _logTime(json['time']),
 );
 
 Map<String, dynamic> _$LogToJson(_Log instance) => <String, dynamic>{
   'LogLevel': _$LogLevelEnumMap[instance.logLevel]!,
   'Payload': instance.payload,
-  'dateTime': instance.dateTime,
+  'time': instance.time.toIso8601String(),
 };
 
 const _$LogLevelEnumMap = {
@@ -125,72 +128,66 @@ const _$LogLevelEnumMap = {
   LogLevel.silent: 'silent',
 };
 
-_DnsQuery _$DnsQueryFromJson(Map<String, dynamic> json) => _DnsQuery(
-  domain: json['domain'] as String,
-  type: json['type'] as String,
-  initiator: $enumDecodeNullable(
-    _$DnsQueryInitiatorEnumMap,
-    json['initiator'],
-    unknownValue: JsonKey.nullForUndefinedEnumValue,
-  ),
-  upstream: json['upstream'] as String? ?? '',
-  cached: json['cached'] as bool? ?? false,
-  answers:
-      (json['answers'] as List<dynamic>?)?.map((e) => e as String).toList() ??
-      const [],
-  rcode: json['rcode'] as String? ?? '',
-  error: json['error'] as String? ?? '',
-  delay: (json['delay'] as num?)?.toInt() ?? 0,
-  time: DateTime.parse(json['time'] as String),
-);
-
-Map<String, dynamic> _$DnsQueryToJson(_DnsQuery instance) => <String, dynamic>{
-  'domain': instance.domain,
-  'type': instance.type,
-  'initiator': _$DnsQueryInitiatorEnumMap[instance.initiator],
-  'upstream': instance.upstream,
-  'cached': instance.cached,
-  'answers': instance.answers,
-  'rcode': instance.rcode,
-  'error': instance.error,
-  'delay': instance.delay,
-  'time': instance.time.toIso8601String(),
-};
-
-const _$DnsQueryInitiatorEnumMap = {
-  DnsQueryInitiator.app: 'app',
-  DnsQueryInitiator.rule: 'rule',
-  DnsQueryInitiator.direct: 'direct',
-  DnsQueryInitiator.proxy: 'proxy',
-  DnsQueryInitiator.other: 'other',
-};
-
-_DAVProps _$DAVPropsFromJson(Map<String, dynamic> json) => _DAVProps(
+_DAV _$DAVFromJson(Map<String, dynamic> json) => _DAV(
   uri: json['uri'] as String,
   user: json['user'] as String,
-  password: json['password'] == null
-      ? ''
-      : _decodeDavPassword(json['password'] as String?),
+  password: json['password'] as String,
   fileName: json['fileName'] as String? ?? defaultDavFileName,
+  autoBackup: json['autoBackup'] as bool? ?? false,
 );
 
-Map<String, dynamic> _$DAVPropsToJson(_DAVProps instance) => <String, dynamic>{
+Map<String, dynamic> _$DAVToJson(_DAV instance) => <String, dynamic>{
   'uri': instance.uri,
   'user': instance.user,
-  'password': _encodeDavPassword(instance.password),
+  'password': instance.password,
   'fileName': instance.fileName,
+  'autoBackup': instance.autoBackup,
 };
 
-_Traffic _$TrafficFromJson(Map<String, dynamic> json) =>
-    _Traffic(up: json['up'] as num? ?? 0, down: json['down'] as num? ?? 0);
+_NetworkInfo _$NetworkInfoFromJson(Map<String, dynamic> json) => _NetworkInfo(
+  type: json['type'] as String? ?? '',
+  interfaceName: json['interface'] as String? ?? '',
+  ip: json['ip'] as String? ?? '',
+  gateway: json['gateway'] as String? ?? '',
+  dns:
+      (json['dns'] as List<dynamic>?)?.map((e) => e as String).toList() ??
+      const [],
+);
 
-Map<String, dynamic> _$TrafficToJson(_Traffic instance) => <String, dynamic>{
-  'up': instance.up,
-  'down': instance.down,
+Map<String, dynamic> _$NetworkInfoToJson(_NetworkInfo instance) =>
+    <String, dynamic>{
+      'type': instance.type,
+      'interface': instance.interfaceName,
+      'ip': instance.ip,
+      'gateway': instance.gateway,
+      'dns': instance.dns,
+    };
+
+_VersionInfo _$VersionInfoFromJson(Map<String, dynamic> json) => _VersionInfo(
+  clashName: json['clashName'] as String? ?? '',
+  version: json['version'] as String? ?? '',
+);
+
+Map<String, dynamic> _$VersionInfoToJson(_VersionInfo instance) =>
+    <String, dynamic>{
+      'clashName': instance.clashName,
+      'version': instance.version,
+    };
+
+_Proxy _$ProxyFromJson(Map<String, dynamic> json) => _Proxy(
+  name: json['name'] as String,
+  type: json['type'] as String,
+  now: json['now'] as String?,
+);
+
+Map<String, dynamic> _$ProxyToJson(_Proxy instance) => <String, dynamic>{
+  'name': instance.name,
+  'type': instance.type,
+  'now': instance.now,
 };
 
 _Group _$GroupFromJson(Map<String, dynamic> json) => _Group(
-  type: GroupType.parse(json['type'] as String),
+  type: $enumDecode(_$GroupTypeEnumMap, json['type']),
   all:
       (json['all'] as List<dynamic>?)
           ?.map((e) => Proxy.fromJson(e as Map<String, dynamic>))
@@ -214,11 +211,10 @@ Map<String, dynamic> _$GroupToJson(_Group instance) => <String, dynamic>{
 };
 
 const _$GroupTypeEnumMap = {
-  GroupType.Selector: 'select',
-  GroupType.URLTest: 'url-test',
-  GroupType.Fallback: 'fallback',
-  GroupType.LoadBalance: 'load-balance',
-  GroupType.Relay: 'relay',
+  GroupType.Selector: 'Selector',
+  GroupType.URLTest: 'URLTest',
+  GroupType.Fallback: 'Fallback',
+  GroupType.LoadBalance: 'LoadBalance',
 };
 
 _HotKeyAction _$HotKeyActionFromJson(Map<String, dynamic> json) =>
@@ -247,13 +243,6 @@ const _$HotActionEnumMap = {
   HotAction.mode: 'mode',
   HotAction.proxy: 'proxy',
   HotAction.tun: 'tun',
-  HotAction.ruleMode: 'ruleMode',
-  HotAction.globalMode: 'globalMode',
-  HotAction.directMode: 'directMode',
-  HotAction.delayTest: 'delayTest',
-  HotAction.updateProfiles: 'updateProfiles',
-  HotAction.copyEnv: 'copyEnv',
-  HotAction.exit: 'exit',
 };
 
 const _$KeyboardModifierEnumMap = {
@@ -265,24 +254,44 @@ const _$KeyboardModifierEnumMap = {
   KeyboardModifier.shift: 'shift',
 };
 
+_TextPainterParams _$TextPainterParamsFromJson(Map<String, dynamic> json) =>
+    _TextPainterParams(
+      text: json['text'] as String?,
+      fontSize: (json['fontSize'] as num?)?.toDouble(),
+      textScaleFactor: (json['textScaleFactor'] as num).toDouble(),
+      maxWidth: (json['maxWidth'] as num?)?.toDouble() ?? double.infinity,
+      maxLines: (json['maxLines'] as num?)?.toInt(),
+    );
+
+Map<String, dynamic> _$TextPainterParamsToJson(_TextPainterParams instance) =>
+    <String, dynamic>{
+      'text': instance.text,
+      'fontSize': instance.fontSize,
+      'textScaleFactor': instance.textScaleFactor,
+      'maxWidth': instance.maxWidth,
+      'maxLines': instance.maxLines,
+    };
+
 _Script _$ScriptFromJson(Map<String, dynamic> json) => _Script(
-  id: (json['id'] as num).toInt(),
+  id: json['id'] as String,
   label: json['label'] as String,
-  lastUpdateTime: DateTime.parse(json['lastUpdateTime'] as String),
+  content: json['content'] as String? ?? '',
   url: json['url'] as String?,
-  order: (json['order'] as num?)?.toInt(),
+  customOptions: (json['custom-options'] as Map<String, dynamic>?)?.map(
+    (k, e) => MapEntry(k, e as bool),
+  ),
+  digest: json['digest'] as String?,
+  compatible: json['compatible'] as bool? ?? false,
+  volatile: json['volatile'] as bool?,
 );
 
 Map<String, dynamic> _$ScriptToJson(_Script instance) => <String, dynamic>{
   'id': instance.id,
   'label': instance.label,
-  'lastUpdateTime': instance.lastUpdateTime.toIso8601String(),
+  'content': instance.content,
   'url': instance.url,
-  'order': instance.order,
+  'custom-options': instance.customOptions,
+  'digest': instance.digest,
+  'compatible': instance.compatible,
+  'volatile': instance.volatile,
 };
-
-_IconSetIcon _$IconSetIconFromJson(Map<String, dynamic> json) =>
-    _IconSetIcon(name: json['name'] as String, url: json['url'] as String);
-
-Map<String, dynamic> _$IconSetIconToJson(_IconSetIcon instance) =>
-    <String, dynamic>{'name': instance.name, 'url': instance.url};

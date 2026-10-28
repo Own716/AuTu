@@ -1,11 +1,10 @@
 import 'dart:async';
+import 'dart:ui';
 
-import 'package:outo/common/common.dart';
-import 'package:outo/enum/enum.dart';
-import 'package:outo/providers/providers.dart';
-import 'package:outo/state.dart';
-import 'package:outo/ui/icons/icons.dart';
-import 'package:outo/ui/ui.dart';
+import 'package:bett_box/common/common.dart';
+import 'package:bett_box/providers/config.dart';
+import 'package:bett_box/state.dart';
+import 'package:bett_box/widgets/widgets.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -17,249 +16,225 @@ class Contributor {
   const Contributor({required this.avatar, required this.name});
 }
 
-class AboutView extends ConsumerWidget {
+class AboutView extends StatelessWidget {
   const AboutView({super.key});
 
-  static const _contributors = [
-    Contributor(avatar: 'assets/images/avatar/june2.jpg', name: 'June2'),
-    Contributor(avatar: 'assets/images/avatar/arue.jpg', name: 'Arue'),
-  ];
-
-  Future<void> _checkUpdate(BuildContext context, WidgetRef ref) async {
-    if (ref.read(loadingProvider(LoadingTag.checkUpdate))) return;
-    final commonAction = ref.read(commonActionProvider.notifier);
-    final result = await globalState.loadingRun(
-      () async => (release: await request.checkForUpdate()),
-      title: context.appLocalizations.checkUpdate,
-      tag: LoadingTag.checkUpdate,
+  Future<void> _checkUpdate(BuildContext context) async {
+    final commonScaffoldState = context.commonScaffoldState;
+    if (commonScaffoldState?.mounted != true) return;
+    final data = await globalState.appController.safeRun<Map<String, dynamic>?>(
+      request.checkForUpdate,
+      title: appLocalizations.checkUpdate,
+      needLoading: true,
     );
-    if (result == null) return;
-    unawaited(
-      commonAction.checkUpdateResultHandle(data: result.release, isUser: true),
+    globalState.appController.checkUpdateResultHandle(
+      data: data,
+      handleError: true,
     );
   }
 
-  Widget _buildLinkItem({
-    required Glyph glyph,
-    required String title,
-    required String url,
-    required String label,
-  }) {
-    return ListItem(
-      leading: _LinkBadge(glyph: glyph),
-      title: Text(title),
-      subtitle: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
-      trailing: const GlyphIcon(AppGlyphs.openExternal),
-      onTap: () {
-        dialogs.openUrl(url);
-      },
+  List<Widget> _buildMoreSection(BuildContext context) {
+    final links = [
+      _LinkTile(
+        title: 'Github Releases',
+        icon: Icons.star,
+        onTap: () =>
+            globalState.openUrl('https://github.com/appshubcc/Bettbox'),
+      ),
+      _LinkTile(
+        title: appLocalizations.checkUpdate,
+        icon: Icons.refresh,
+        external: false,
+        onTap: () => _checkUpdate(context),
+      ),
+      _LinkTile(
+        title: 'Telegram Group',
+        icon: Icons.forum_outlined,
+        onTap: () => globalState.openUrl('https://telegram.me/appshub_chat'),
+      ),
+      _LinkTile(
+        title: 'Channel',
+        icon: Icons.campaign_outlined,
+        onTap: () => globalState.openUrl('https://telegram.me/appshub_channel'),
+      ),
+      _LinkTile(
+        prefix: 'Forked from',
+        title: 'FlClash',
+        icon: Icons.code,
+        onTap: () =>
+            globalState.openUrl('https://github.com/chen08209/FlClash'),
+      ),
+      _LinkTile(
+        prefix: 'Powered by',
+        title: 'Mihomo',
+        icon: Icons.memory,
+        onTap: () => globalState.openUrl('https://github.com/MetaCubeX/mihomo'),
+      ),
+    ];
+    return generateSection(
+      title: appLocalizations.more,
+      items: [
+        for (var i = 0; i < links.length; i += 2)
+          _LinkGridRow(left: links[i], right: links[i + 1]),
+      ],
+    );
+  }
+
+  List<Widget> _buildContributorsSection() {
+    final contributors = [
+      const Contributor(
+        avatar: 'assets/images/avatars/june2.jpg',
+        name: 'June2',
+      ),
+      const Contributor(avatar: 'assets/images/avatars/arue.jpg', name: 'Arue'),
+      const Contributor(
+        avatar: 'assets/images/avatars/dabaozi.jpg',
+        name: '大包子',
+      ),
+      const Contributor(
+        avatar: 'assets/images/avatars/xiaolou.png',
+        name: '小楼',
+      ),
+      const Contributor(avatar: 'assets/images/avatars/www.jpg', name: 'Www'),
+      const Contributor(
+        avatar: 'assets/images/avatars/AIsouler.jpg',
+        name: 'AIsouler',
+      ),
+      const Contributor(
+        avatar: 'assets/images/avatars/songchenwen.jpg',
+        name: 'songchenwen',
+      ),
+      const Contributor(
+        avatar: 'assets/images/avatars/EriDeLee.jpg',
+        name: 'EriDeLee',
+      ),
+      const Contributor(
+        avatar: 'assets/images/avatars/AdySnowflake.png',
+        name: 'AdySnowflake',
+      ),
+      const Contributor(
+        avatar: 'assets/images/avatars/CyberVacation.jpg',
+        name: 'CyberVacation',
+      ),
+      const Contributor(
+        avatar: 'assets/images/avatars/VillagerTom.png',
+        name: 'VillagerTom',
+      ),
+      const Contributor(
+        avatar: 'assets/images/avatars/ZeonX.jpg',
+        name: 'ZeonX',
+      ),
+      const Contributor(
+        avatar: 'assets/images/avatars/feitianmoo.png',
+        name: 'feitianmoo',
+      ),
+      const Contributor(
+        avatar: 'assets/images/avatars/kouhe3.jpg',
+        name: 'kouhe3',
+      ),
+      const Contributor(
+        avatar: 'assets/images/avatars/soffchen.png',
+        name: 'soffchen',
+      ),
+      const Contributor(
+        avatar: 'assets/images/avatars/utafrali.jpg',
+        name: 'utafrali',
+      ),
+      const Contributor(
+        avatar: 'assets/images/avatars/wfion.png',
+        name: 'wfion',
+      ),
+    ]..shuffle();
+    return generateSection(
+      separated: false,
+      title: appLocalizations.otherContributors,
+      items: [ListItem(title: _ContributorsRow(contributors: contributors))],
     );
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final appLocalizations = context.appLocalizations;
-    final isLoading = ref.watch(loadingProvider(LoadingTag.checkUpdate));
-    return CommonScaffold(
-      isLoading: isLoading,
-      title: appLocalizations.about,
-      body: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 16).copyWith(
-          top: context.contentTopPadding,
-          bottom: 32 + context.bottomInset,
-        ),
-        children: [
-          _AboutHero(
-            isCheckingUpdate: isLoading,
-            onCheckUpdate: () {
-              _checkUpdate(context, ref);
-            },
-            onEnterDeveloperMode: () {
-              ref
-                  .read(appSettingProvider.notifier)
-                  .update((state) => state.copyWith(developerMode: true));
-              context.showNotifier(
-                appLocalizations.developerModeEnableTip,
-                level: MessageLevel.success,
-              );
-            },
-          ),
-          const SizedBox(height: 8),
-          generateSection(
-            title: appLocalizations.more,
-            items: [
-              _buildLinkItem(
-                glyph: AppGlyphs.code,
-                title: appLocalizations.project,
-                url: 'https://github.com/$repository',
-                label: 'github.com/$repository',
-              ),
-              _buildLinkItem(
-                glyph: AppGlyphs.cpu,
-                title: appLocalizations.core,
-                url: 'https://github.com/chen08209/Clash.Meta/tree/FlClash',
-                label: 'github.com/chen08209/Clash.Meta',
-              ),
-            ],
-          ),
-          generateSection(
-            title: appLocalizations.otherContributors,
-            items: [
-              for (final contributor in _contributors)
-                ListItem(
-                  leading: CircleAvatar(
-                    foregroundImage: AssetImage(contributor.avatar),
+  Widget build(BuildContext context) {
+    final items = [
+      ListTile(
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Consumer(
+              builder: (_, ref, _) {
+                return _DeveloperModeDetector(
+                  child: Wrap(
+                    spacing: 16,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Image.asset(
+                          'assets/images/icon.png',
+                          width: 48,
+                          height: 48,
+                        ),
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            appName,
+                            style: Theme.of(context).textTheme.headlineSmall,
+                          ),
+                          Text(
+                            '${globalState.packageInfo.version}+${globalState.packageInfo.buildNumber}',
+                            style: Theme.of(context).textTheme.labelLarge,
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                  title: Text(contributor.name),
-                  subtitle: Text(appLocalizations.appIconDesign),
-                ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _AboutHero extends StatelessWidget {
-  final bool isCheckingUpdate;
-  final VoidCallback onCheckUpdate;
-  final VoidCallback onEnterDeveloperMode;
-
-  const _AboutHero({
-    required this.isCheckingUpdate,
-    required this.onCheckUpdate,
-    required this.onEnterDeveloperMode,
-  });
-
-  static const _logoSize = 96.0;
-  static const _logoInset = 14.0;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = context.colorScheme;
-    final appLocalizations = context.appLocalizations;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
-      child: Column(
-        children: [
-          _DeveloperModeDetector(
-            onEnterDeveloperMode: onEnterDeveloperMode,
-            child: DecoratedBox(
-              decoration: ShapeDecoration(
-                color: context.raisedSurfaceLevel.colorOf(colorScheme),
-                shape: AppShape.all(AppCorner.fit(_logoSize)),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(_logoInset),
-                child: Image.asset(
-                  Theme.of(context).brightness == Brightness.dark
-                      ? 'assets/images/icon_dark.png'
-                      : 'assets/images/icon_light.png',
-                  width: _logoSize - _logoInset * 2,
-                  height: _logoSize - _logoInset * 2,
-                ),
-              ),
+                  onEnterDeveloperMode: () {
+                    ref
+                        .read(appSettingProvider.notifier)
+                        .updateState(
+                          (state) => state.copyWith(developerMode: true),
+                        );
+                    context.showNotifier(
+                      appLocalizations.developerModeEnableTip,
+                    );
+                  },
+                );
+              },
             ),
-          ),
-          const SizedBox(height: 20),
-          Text(
-            appName,
-            style: AppTextStyle.title2.of(context, emphasized: true),
-          ),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            alignment: WrapAlignment.center,
-            children: [
-              _Pill(
-                label: 'v${globalState.packageInfo.version}',
-                color: colorScheme.primary,
-                foregroundColor: colorScheme.onPrimary,
-              ),
-              _Pill(
-                label: 'GPL-3.0',
-                color: context.raisedSurfaceLevel.colorOf(colorScheme),
-                foregroundColor: colorScheme.onSurfaceVariant,
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 420),
-            child: Text(
+            const SizedBox(height: 24),
+            Text(
               appLocalizations.desc,
-              textAlign: TextAlign.center,
-              style: AppTextStyle.subheadline
-                  .of(context)
-                  .copyWith(color: colorScheme.onSurfaceVariant, height: 1.5),
+              style: Theme.of(context).textTheme.bodySmall,
             ),
-          ),
-          const SizedBox(height: 20),
-          TonalButton(
-            size: TonalButtonSize.bar,
-            glyph: AppGlyphs.sync,
-            label: appLocalizations.checkUpdate,
-            onPressed: isCheckingUpdate ? null : onCheckUpdate,
-          ),
-        ],
+          ],
+        ),
       ),
-    );
+      const SizedBox(height: 12),
+      ..._buildContributorsSection(),
+      ..._buildMoreSection(context),
+    ];
+    return generateListView(items);
   }
 }
 
-class _Pill extends StatelessWidget {
-  final String label;
-  final Color color;
-  final Color foregroundColor;
+class Avatar extends StatelessWidget {
+  final Contributor contributor;
 
-  const _Pill({
-    required this.label,
-    required this.color,
-    required this.foregroundColor,
-  });
+  const Avatar({super.key, required this.contributor});
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: ShapeDecoration(color: color, shape: AppShape.full),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-        child: Text(
-          label,
-          style: AppTextStyle.caption1
-              .of(context, emphasized: true)
-              .copyWith(color: foregroundColor),
+    return Column(
+      children: [
+        SizedBox(
+          width: 36,
+          height: 36,
+          child: CircleAvatar(foregroundImage: AssetImage(contributor.avatar)),
         ),
-      ),
-    );
-  }
-}
-
-class _LinkBadge extends StatelessWidget {
-  final Glyph glyph;
-
-  const _LinkBadge({required this.glyph});
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = context.colorScheme;
-    return DecoratedBox(
-      decoration: ShapeDecoration(
-        color: context.raisedSurfaceLevel.colorOf(colorScheme),
-        shape: AppShape.md,
-      ),
-      child: SizedBox.square(
-        dimension: 40,
-        child: Center(
-          child: GlyphIcon(
-            glyph,
-            size: 20,
-            color: colorScheme.onSurfaceVariant,
-          ),
-        ),
-      ),
+        const SizedBox(height: 4),
+        Text(contributor.name, style: context.textTheme.bodySmall),
+      ],
     );
   }
 }
@@ -288,7 +263,7 @@ class _DeveloperModeDetectorState extends State<_DeveloperModeDetector> {
       _resetCounter();
     } else {
       _timer?.cancel();
-      _timer = Timer(const Duration(seconds: 1), _resetCounter);
+      _timer = Timer(Duration(seconds: 1), _resetCounter);
     }
   }
 
@@ -307,5 +282,180 @@ class _DeveloperModeDetectorState extends State<_DeveloperModeDetector> {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(onTap: _handleTap, child: widget.child);
+  }
+}
+
+class _ContributorsRow extends StatefulWidget {
+  final List<Contributor> contributors;
+
+  const _ContributorsRow({required this.contributors});
+
+  @override
+  State<_ContributorsRow> createState() => _ContributorsRowState();
+}
+
+class _ContributorsRowState extends State<_ContributorsRow> {
+  final _controller = ScrollController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Shader _createEdgeShader(Rect rect) {
+    final position = _controller.hasClients ? _controller.position : null;
+    final hasBefore = position != null && position.extentBefore > 0;
+    final hasAfter = position == null || position.extentAfter > 0;
+    return LinearGradient(
+      colors: [
+        hasBefore ? Colors.transparent : Colors.white,
+        Colors.white,
+        Colors.white,
+        hasAfter ? Colors.transparent : Colors.white,
+      ],
+      stops: const [0, 0.1, 0.9, 1],
+    ).createShader(rect);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScrollConfiguration(
+      behavior: ScrollConfiguration.of(context).copyWith(
+        scrollbars: false,
+        dragDevices: PointerDeviceKind.values.toSet(),
+      ),
+      child: MediaQuery.removePadding(
+        context: context,
+        removeLeft: true,
+        removeTop: true,
+        removeRight: true,
+        removeBottom: true,
+        child: Scrollbar(
+          controller: _controller,
+          thumbVisibility: true,
+          thickness: 4,
+          radius: const Radius.circular(2),
+          child: ShaderMask(
+            shaderCallback: _createEdgeShader,
+            blendMode: BlendMode.dstIn,
+            child: SingleChildScrollView(
+              controller: _controller,
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Wrap(
+                spacing: 24,
+                children: [
+                  for (final contributor in widget.contributors)
+                    Avatar(contributor: contributor),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LinkGridRow extends StatelessWidget {
+  final _LinkTile left;
+  final _LinkTile right;
+
+  const _LinkGridRow({required this.left, required this.right});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = context.colorScheme;
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(child: left),
+          VerticalDivider(
+            width: 1,
+            thickness: 1,
+            indent: 10,
+            endIndent: 10,
+            color: colorScheme.outlineVariant.withValues(
+              alpha: colorScheme.brightness == Brightness.light ? 0.6 : 0.45,
+            ),
+          ),
+          Expanded(child: right),
+        ],
+      ),
+    );
+  }
+}
+
+class _LinkTile extends StatelessWidget {
+  final String? prefix;
+  final String title;
+  final IconData icon;
+  final bool external;
+  final VoidCallback onTap;
+
+  const _LinkTile({
+    this.prefix,
+    required this.title,
+    required this.icon,
+    this.external = true,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = context.colorScheme;
+    final prefix = this.prefix;
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    color: colorScheme.primary.opacity12,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(icon, size: 19, color: colorScheme.primary),
+                ),
+                const Spacer(),
+                Icon(
+                  external ? Icons.arrow_outward : Icons.arrow_forward,
+                  size: 16,
+                  color: colorScheme.onSurfaceVariant.opacity50,
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text.rich(
+              TextSpan(
+                children: [
+                  if (prefix != null)
+                    TextSpan(
+                      text: '$prefix ',
+                      style: context.textTheme.labelSmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant.opacity80,
+                      ),
+                    ),
+                  TextSpan(text: title),
+                ],
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: context.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

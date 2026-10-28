@@ -1,16 +1,13 @@
 import 'dart:async';
 
-import 'package:collection/collection.dart';
-import 'package:outo/common/common.dart';
-import 'package:outo/common/tray.dart';
-import 'package:outo/common/window.dart';
-import 'package:outo/enum/enum.dart';
-import 'package:outo/providers/action.dart';
-import 'package:outo/providers/app.dart';
-import 'package:outo/providers/state.dart';
+import 'package:bett_box/common/common.dart';
+import 'package:bett_box/enum/enum.dart';
+import 'package:bett_box/providers/config.dart';
+import 'package:bett_box/providers/state.dart';
+import 'package:bett_box/state.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:tray/tray.dart';
+import 'package:tray_manager/tray_manager.dart';
 
 class TrayManager extends ConsumerStatefulWidget {
   final Widget child;
@@ -18,94 +15,19 @@ class TrayManager extends ConsumerStatefulWidget {
   const TrayManager({super.key, required this.child});
 
   @override
-  ConsumerState<TrayManager> createState() => _TrayManagerState();
+  ConsumerState<TrayManager> createState() => _TrayContainerState();
 }
 
-class _TrayManagerState extends ConsumerState<TrayManager> {
-  StreamSubscription<TrayEvent>? _subscription;
-  bool _isUpdating = false;
-  bool _hasPendingUpdate = false;
-
+class _TrayContainerState extends ConsumerState<TrayManager> with TrayListener {
   @override
   void initState() {
     super.initState();
-    _subscription = Tray.instance.events.listen(_handleTrayEvent);
+    trayManager.addListener(this);
     ref.listenManual(trayStateProvider, (prev, next) {
       if (prev != next) {
-        _requestUpdate();
+        globalState.appController.updateTray();
       }
     });
-    ref.listenManual(loadedLocaleProvider, (prev, next) {
-      if (prev != null && prev != next) {
-        _requestUpdate();
-      }
-    });
-    if (system.isMacOS) {
-      ref.listenManual(trayDelaysProvider, (prev, next) {
-        if (!const DeepCollectionEquality().equals(prev, next)) {
-          _requestUpdate();
-        }
-      });
-      ref.listenManual(trayTitleStateProvider, (prev, next) {
-        if (prev != next) {
-          _reportFailure(
-            appTray?.updateTitle(
-              showTrayTitle: next.showTrayTitle,
-              traffic: next.traffic,
-            ),
-          );
-        }
-      });
-    }
-  }
-
-  /// A delay test changes the menu per proxy, so updates in flight coalesce.
-  void _requestUpdate() {
-    if (_isUpdating) {
-      _hasPendingUpdate = true;
-      return;
-    }
-    _isUpdating = true;
-    _reportFailure(_drainUpdates());
-  }
-
-  Future<void> _drainUpdates() async {
-    try {
-      do {
-        _hasPendingUpdate = false;
-        await ref.read(systemActionProvider.notifier).updateTray();
-      } while (_hasPendingUpdate && mounted);
-    } finally {
-      _isUpdating = false;
-      if (_hasPendingUpdate && mounted) {
-        _requestUpdate();
-      }
-    }
-  }
-
-  void _reportFailure(Future<void>? operation) {
-    if (operation == null) {
-      return;
-    }
-    unawaited(
-      operation.onError<Object>((error, stackTrace) {
-        commonPrint.log(
-          'Tray operation failed: ${compactError(error)}',
-          logLevel: LogLevel.error,
-        );
-      }),
-    );
-  }
-
-  void _handleTrayEvent(TrayEvent event) {
-    switch (event) {
-      case TrayIconActivated():
-        window?.show();
-      case TrayMenuRequested():
-        _reportFailure(Tray.instance.openMenu());
-      case TrayMenuItemSelected():
-        break;
-    }
   }
 
   @override
@@ -113,9 +35,73 @@ class _TrayManagerState extends ConsumerState<TrayManager> {
     return widget.child;
   }
 
+  Future<void> _handleTrayIconClick({required bool isRightClick}) async {
+    if (system.isWindows) {
+      if (isRightClick) {
+        // ignore: deprecated_member_use
+        await trayManager.popUpContextMenu(bringAppToFront: true);
+      } else {
+        window?.show();
+      }
+      return;
+    }
+    if (system.isLinux) {
+      if (!isRightClick) {
+        window?.show();
+      }
+      return;
+    }
+    final vpnProps = ref.read(vpnSettingProvider);
+    final showHiddenItems = ref.read(
+      proxiesStyleSettingProvider.select((state) => state.showHiddenItems),
+    );
+    if (trayManager.isOptionPressed &&
+        vpnProps.trayEnhancement &&
+        !showHiddenItems) {
+      tray.showHiddenGroups = true;
+      await globalState.appController.updateTray(false, false, true);
+      await trayManager.popUpContextMenu();
+      return;
+    }
+    final behavior = isRightClick
+        ? vpnProps.trayRightClickBehavior
+        : vpnProps.trayLeftClickBehavior;
+    if (behavior == TrayClickBehavior.showMenu) {
+      // ignore: deprecated_member_use
+      await trayManager.popUpContextMenu(bringAppToFront: true);
+      return;
+    }
+    window?.show();
+  }
+
   @override
-  void dispose() {
-    _subscription?.cancel();
+  void onTrayIconRightMouseDown() {
+    unawaited(_handleTrayIconClick(isRightClick: true));
+  }
+
+  @override
+  void onTrayIconMouseDown() {
+    unawaited(_handleTrayIconClick(isRightClick: false));
+  }
+
+  @override
+  void onTrayMenuItemClick(MenuItem menuItem) {
+    if (menuItem.submenu != null) return;
+    if (globalState.backgroundMode.value) {
+      globalState.appController.updateTray(false, false, true);
+    }
+  }
+
+  @override
+  void onTrayMenuClose() {
+    if (!tray.showHiddenGroups || trayManager.isMenuOpen) return;
+    tray.showHiddenGroups = false;
+    globalState.appController.updateTray(false, false, true);
+  }
+
+  @override
+  dispose() {
+    trayManager.removeListener(this);
     super.dispose();
   }
 }

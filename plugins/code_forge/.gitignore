@@ -1,1 +1,7 @@
-pubspec.lock
+# Build directory
+build/
+.dart_tool/
+.pub/
+.packages
+
+rust/target/

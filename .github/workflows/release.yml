@@ -1,130 +1,114 @@
 name: Release Build
+
 on:
   push:
     tags:
-      - "v*"
+      - 'v*'
   workflow_dispatch:
     inputs:
       tag:
-        description: "Release Tag (e.g. v0.9.1)"
+        description: 'Release Tag (e.g. v1.0.11)'
         required: true
-        default: "v0.9.1"
+        default: 'v1.0.11'
 
 permissions:
   contents: write
 
 jobs:
-  libcore:
-    name: Native Build (LibCore)
-    runs-on: ubuntu-latest
+  build-android:
+    name: Build Android APK (${{ matrix.arch }})
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: arm64
+          - arch: amd64
+          - arch: arm
+          - arch: universal
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          submodules: recursive
+          fetch-depth: 1
 
-      - name: Install Golang
-        uses: actions/setup-go@v5
+      - name: Setup Rust (Android)
+        uses: dtolnay/rust-toolchain@stable
         with:
-          go-version: '1.27.1'
-          cache: true
-          cache-dependency-path: core/go.sum
+          targets: aarch64-linux-android,armv7-linux-androideabi,x86_64-linux-android,i686-linux-android
 
-      - name: Fetch CA certificates
-        shell: bash
+      - name: Setup Keystore (Android)
         env:
-          CA_BUNDLE: cacert-2026-09-25.pem
-          CA_BUNDLE_SHA256: a41b5d356aea97a529fe27e0f7316d2f9d946d75927476cf9cf1b90637d00505
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASS: ${{ secrets.KEYSTORE_PASS }}
+          ALIAS_NAME: ${{ secrets.ALIAS_NAME }}
+          ALIAS_PASS: ${{ secrets.ALIAS_PASS }}
         run: |
-          bundle=core/Clash.Meta/component/ca/ca-certificates.crt
-          curl -fsSL --retry 3 -o "$bundle" "https://curl.se/ca/$CA_BUNDLE"
-          echo "$CA_BUNDLE_SHA256  $bundle" | sha256sum -c -
+          mkdir -p android/app
+          echo "$KEYSTORE_BASE64" | base64 --decode > android/app/keystore.jks
+          cat > android/local.properties <<EOF
+          storePassword=$KEYSTORE_PASS
+          keyAlias=$ALIAS_NAME
+          keyPassword=$ALIAS_PASS
+          EOF
 
-      - name: Verify LibCore
-        working-directory: core
-        run: |
-          go vet . ./cmd/...
-
-  build:
-    name: Build OSS APK
-    runs-on: ubuntu-latest
-    needs:
-      - libcore
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-          fetch-depth: 0
-
-      - name: Setup Android Signing
-        env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 || secrets.KEYSTORE }}
-          KEYSTORE_PASS: ${{ secrets.KEYSTORE_PASS || secrets.STORE_PASSWORD || secrets.KEYSTORE_PASSWORD }}
-          ALIAS_NAME: ${{ secrets.ALIAS_NAME || secrets.KEY_ALIAS }}
-          ALIAS_PASS: ${{ secrets.ALIAS_PASS || secrets.KEY_PASSWORD }}
-        run: |
-          if [ -n "$KEYSTORE_BASE64" ] && [ -n "$KEYSTORE_PASS" ]; then
-            echo "$KEYSTORE_BASE64" | base64 --decode > android/app/keystore.jks
-            {
-              echo "storePassword=${KEYSTORE_PASS}"
-              echo "keyAlias=${ALIAS_NAME:-outo}"
-              echo "keyPassword=${ALIAS_PASS:-$KEYSTORE_PASS}"
-            } > android/local.properties
-            echo "Unified release keystore restored from repository secrets."
-          else
-            echo "::error::Release signing credentials (KEYSTORE_BASE64 / KEYSTORE_PASS) missing in GitHub Secrets. Refusing to build without unified signing key."
-            exit 1
-          fi
-
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.27.1'
-          cache: true
-          cache-dependency-path: core/go.sum
-
-      - name: Setup Java
+      - name: Setup Java (Android)
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
+          cache: 'gradle'
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
+      - name: Setup Android NDK
+        shell: bash
+        run: |
+          NDK_VERSION="28.2.13676358"
+          yes | "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager" --install "ndk;${NDK_VERSION}" >/dev/null 2>&1 || true
+          echo "ANDROID_NDK=${ANDROID_SDK_ROOT}/ndk/${NDK_VERSION}" >> "$GITHUB_ENV"
+
+      - name: Configure Cargo for Android
+        shell: bash
+        run: |
+          mkdir -p ~/.cargo
+          cat > ~/.cargo/config.toml <<EOF
+          [target.aarch64-linux-android]
+          linker = "${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android26-clang"
+          [target.armv7-linux-androideabi]
+          linker = "${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/bin/armv7a-linux-androideabi26-clang"
+          [target.x86_64-linux-android]
+          linker = "${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/bin/x86_64-linux-android26-clang"
+          [target.i686-linux-android]
+          linker = "${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/bin/i686-linux-android26-clang"
+          EOF
+
+      - name: Setup Golang
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.x'
+          cache-dependency-path: core/go.sum
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: stable
-          flutter-version: '3.47.6'
+          channel: 'stable'
           cache: true
+          flutter-version: '3.47.7'
 
-      - name: Setup NDK
-        uses: nttld/setup-ndk@v1
-        id: build-ndk
-        with:
-          ndk-version: r28c
-          add-to-path: true
-          link-to-sdk: true
-
-      - name: Fetch CA certificates
+      - name: Clear Pub Cache Credentials
         shell: bash
-        env:
-          CA_BUNDLE: cacert-2026-09-25.pem
-          CA_BUNDLE_SHA256: a41b5d356aea97a529fe27e0f7316d2f9d946d75927476cf9cf1b90637d00505
-        run: |
-          bundle=core/Clash.Meta/component/ca/ca-certificates.crt
-          curl -fsSL --retry 3 -o "$bundle" "https://curl.se/ca/$CA_BUNDLE"
-          echo "$CA_BUNDLE_SHA256  $bundle" | sha256sum -c -
+        run: rm -f ~/.pub-cache/credentials.json 2>/dev/null || true
 
-      - name: Install dependencies
-        run: flutter pub get
+      - name: Clean Gradle
+        run: |
+          cd android
+          flutter clean
 
       - name: Build Android APK
-        env:
-          ANDROID_NDK_HOME: ${{ steps.build-ndk.outputs.ndk-path }}
-        run: dart setup.dart android
+        shell: bash
+        run: |
+          flutter pub get
+          dart run build_runner build
+          dart setup.dart android --arch ${{ matrix.arch }}
 
       - name: Cleanup Signing Secrets
         if: always()
@@ -134,43 +118,40 @@ jobs:
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: APKs
+          name: APK-${{ matrix.arch }}
           path: ./dist/*.apk
           if-no-files-found: error
 
   publish:
     name: Publish Release
     runs-on: ubuntu-latest
-    needs: build
+    needs: build-android
     permissions:
       contents: write
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
       - name: Download Artifacts
         uses: actions/download-artifact@v4
         with:
-          name: APKs
           path: artifacts
+          merge-multiple: true
 
       - name: Prepare APKs and Checksums
         run: |
-          mkdir -p apks
-          find artifacts -name "*.apk" -exec cp {} apks/ \;
-          cd apks
+          mkdir -p dist
+          find artifacts -name "*.apk" -exec cp {} dist/ \;
+          cd dist
           sha256sum *.apk > sha256sums.txt
           cd ..
-          ls -la apks/
+          ls -la dist/
 
       - name: Publish to GitHub Releases
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.event.inputs.tag || github.ref_name }}
-          name: AuTu ${{ github.event.inputs.tag || github.ref_name }} 预览版
+          name: AuTu ${{ github.event.inputs.tag || github.ref_name }} Preview
           files: |
-            apks/*.apk
-            apks/sha256sums.txt
+            dist/*.apk
+            dist/sha256sums.txt
           draft: false
-          prerelease: ${{ contains(github.event.inputs.tag || github.ref_name, 'preview') || contains(github.event.inputs.tag || github.ref_name, 'alpha') || contains(github.event.inputs.tag || github.ref_name, 'beta') }}
-          make_latest: ${{ !(contains(github.event.inputs.tag || github.ref_name, 'preview') || contains(github.event.inputs.tag || github.ref_name, 'alpha') || contains(github.event.inputs.tag || github.ref_name, 'beta')) }}
+          prerelease: true
+          make_latest: false

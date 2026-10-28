@@ -1,358 +1,922 @@
+import 'dart:async';
 import 'dart:math' as math;
 
-import 'package:outo/common/common.dart';
-import 'package:outo/core/core.dart';
-import 'package:outo/enum/enum.dart';
-import 'package:outo/providers/providers.dart';
-import 'package:outo/ui/icons/icons.dart';
-import 'package:outo/widgets/widgets.dart';
-import 'package:flutter/rendering.dart';
+import 'package:bett_box/common/common.dart';
+import 'package:bett_box/enum/enum.dart';
+import 'package:bett_box/models/models.dart';
+import 'package:bett_box/providers/providers.dart';
+import 'package:bett_box/state.dart';
+import 'package:bett_box/widgets/widgets.dart';
+import 'package:defer_pointer/defer_pointer.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
-import 'edit.dart';
-import 'layout.dart';
-import 'style.dart';
-import 'widget_registry.dart';
-import 'widgets/core_status_button.dart';
 import 'widgets/widgets.dart';
 
-// Narrower columns leave a pair of service cells too tight for a status, so
-// the grid stacks them in one.
-const _servicePairColumnMin = 290.0;
-
-const _maxColumnWidth = 440.0;
+typedef _IsEditWidgetBuilder = Widget Function(bool isEdit);
 
 class DashboardView extends ConsumerStatefulWidget {
-  const DashboardView({super.key, this.platform});
-
-  /// The host's platform when null.
-  final SupportPlatform? platform;
+  const DashboardView({super.key});
 
   @override
   ConsumerState<DashboardView> createState() => _DashboardViewState();
 }
 
 class _DashboardViewState extends ConsumerState<DashboardView> {
-  var _editing = false;
-  final _cardKeys = <DashboardWidget, GlobalKey>{};
+  final GlobalKey<_DashboardStartSwitchState> _startSwitchKey = GlobalKey();
+  final _isEditNotifier = ValueNotifier<bool>(false);
+  final _menuOpenNotifier = ValueNotifier<bool>(false);
 
-  void _setEditing(bool editing) {
-    setState(() => _editing = editing);
+  @override
+  void initState() {
+    super.initState();
+    if (globalState.isAndroidTV) {
+      globalState.focusDashboardStartSwitch = _requestStartSwitchFocus;
+    }
   }
 
-  GlobalKey _cardKeyOf(DashboardWidget widget) =>
-      _cardKeys.putIfAbsent(widget, GlobalKey.new);
+  void _requestStartSwitchFocus() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _startSwitchKey.currentState?.requestFocus();
+    });
+  }
+
+  @override
+  void dispose() {
+    if (globalState.focusDashboardStartSwitch == _requestStartSwitchFocus) {
+      globalState.focusDashboardStartSwitch = null;
+    }
+    _isEditNotifier.dispose();
+    _menuOpenNotifier.dispose();
+    super.dispose();
+  }
+
+  Widget _buildIsEdit(_IsEditWidgetBuilder builder) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: _isEditNotifier,
+      builder: (_, isEdit, _) => builder(isEdit),
+    );
+  }
+
+  List<DashboardWidget> _addableWidgets(List<DashboardWidget> current) {
+    final families = {for (final item in current) item.family};
+    return [
+      for (final item in DashboardWidget.values)
+        if (item == item.family &&
+            !families.contains(item) &&
+            item.platforms.contains(SupportPlatform.currentPlatform))
+          item,
+    ];
+  }
+
+  List<DashboardWidget> _currentWidgets() =>
+      ref.read(dashboardStateProvider).dashboardWidgets;
+
+  Map<String, String> _currentSizes() => ref.read(
+    appSettingProvider.select(
+      (state) => system.isAndroid
+          ? state.mobileDashboardSizes
+          : state.desktopDashboardSizes,
+    ),
+  );
+
+  void _saveWidgets(
+    List<DashboardWidget> dashboardWidgets, {
+    Map<String, String>? sizes,
+  }) {
+    ref
+        .read(appSettingProvider.notifier)
+        .updateState(
+          (state) => system.isAndroid
+              ? state.copyWith(
+                  mobileDashboardWidgets: dashboardWidgets,
+                  dashboardWidgets: dashboardWidgets,
+                  mobileDashboardSizes: sizes ?? state.mobileDashboardSizes,
+                )
+              : state.copyWith(
+                  desktopDashboardWidgets: dashboardWidgets,
+                  dashboardWidgets: dashboardWidgets,
+                  desktopDashboardSizes: sizes ?? state.desktopDashboardSizes,
+                ),
+        );
+  }
+
+  Map<String, String> _sizesWithout(DashboardWidget widget) =>
+      {..._currentSizes()}..remove(widget.family.name);
+
+  void _resizeWidget(DashboardTile tile) {
+    final sizes = tile.widget.sizes;
+    final next = sizes[(sizes.indexOf(tile.size) + 1) % sizes.length];
+    final widget = tile.widget.variantFor(next);
+    final nextSizes = _sizesWithout(widget);
+    if (widget.nativeSize != next) nextSizes[widget.family.name] = next.name;
+    _saveWidgets([
+      for (final item in _currentWidgets()) item == tile.widget ? widget : item,
+    ], sizes: nextSizes);
+  }
+
+  void _deleteWidget(DashboardTile tile) {
+    _saveWidgets([
+      for (final item in _currentWidgets())
+        if (item != tile.widget) item,
+    ], sizes: _sizesWithout(tile.widget));
+  }
+
+  void _moveWidget(DashboardTile from, DashboardTile to) {
+    final widgets = [..._currentWidgets()];
+    final source = widgets.indexOf(from.widget);
+    final target = widgets.indexOf(to.widget);
+    if (source < 0 || target < 0 || source == target) return;
+    widgets.insert(target, widgets.removeAt(source));
+    _saveWidgets(widgets);
+  }
+
+  List<Widget> _buildActions(bool showStartSwitch, bool isDark) {
+    return [
+      _buildIsEdit((isEdit) {
+        if (!isEdit) return const SizedBox.shrink();
+        return Consumer(
+          builder: (_, ref, child) {
+            final addable = _addableWidgets(
+              ref.watch(dashboardStateProvider).dashboardWidgets,
+            );
+            if (addable.isEmpty || child == null) {
+              return const SizedBox.shrink();
+            }
+            return child;
+          },
+          child: IconButton(
+            onPressed: _showAddWidgetsModal,
+            icon: const Icon(Icons.add_circle),
+          ),
+        );
+      }),
+      _buildIsEdit((isEdit) {
+        if (isEdit) {
+          return IconButton(
+            onPressed: _handleUpdateIsEdit,
+            tooltip: appLocalizations.save,
+            icon: const Icon(Icons.save),
+          );
+        }
+        return CommonPopupBox(
+          targetBuilder: (open) {
+            final button = IconButton(
+              onPressed: () async {
+                _menuOpenNotifier.value = true;
+                await open(offset: const Offset(0, 20));
+                if (!mounted) return;
+                _menuOpenNotifier.value = false;
+              },
+              tooltip: appLocalizations.more,
+              icon: showStartSwitch
+                  ? ValueListenableBuilder<bool>(
+                      valueListenable: _menuOpenNotifier,
+                      builder: (_, isOpen, _) => _MenuDots(isOpen: isOpen),
+                    )
+                  : const Icon(Icons.more_vert),
+            );
+            if (!showStartSwitch) return button;
+            return Transform.translate(
+              offset: const Offset(4, 0),
+              child: button,
+            );
+          },
+          popup: CommonPopupMenu(
+            items: [
+              PopupMenuItemData(
+                icon: Icons.edit,
+                label: appLocalizations.edit,
+                onPressed: _handleUpdateIsEdit,
+              ),
+              PopupMenuItemData(
+                icon: isDark ? Icons.light_mode : Icons.dark_mode,
+                label: isDark ? appLocalizations.light : appLocalizations.dark,
+                onPressed: () {
+                  ref
+                      .read(themeSettingProvider.notifier)
+                      .updateState(
+                        (state) => state.copyWith(
+                          themeMode: isDark ? ThemeMode.light : ThemeMode.dark,
+                        ),
+                      );
+                },
+              ),
+              PopupMenuItemData(
+                icon: Icons.title,
+                label: appLocalizations.customDashboardTitle,
+                onPressed: _showEditTitleDialog,
+              ),
+              PopupMenuItemData(
+                icon: Icons.restart_alt,
+                label: appLocalizations.restartCoreTitle,
+                onPressed: _handleRestartCore,
+              ),
+            ],
+          ),
+        );
+      }),
+      if (showStartSwitch) _DashboardStartSwitch(key: _startSwitchKey),
+    ];
+  }
+
+  void _showAddWidgetsModal() {
+    showSheet(
+      builder: (_, type) {
+        return Consumer(
+          builder: (_, ref, _) {
+            final current = ref.watch(dashboardStateProvider).dashboardWidgets;
+            return AdaptiveSheetScaffold(
+              type: type,
+              body: _AddDashboardWidgetModal(
+                items: [
+                  for (final item in _addableWidgets(current)) item.widget,
+                ],
+                onAdd: (gridItem) {
+                  final widget = DashboardWidget.values.firstWhere(
+                    (item) => item.widget == gridItem,
+                  );
+                  _saveWidgets([
+                    ..._currentWidgets(),
+                    widget,
+                  ], sizes: _sizesWithout(widget));
+                },
+              ),
+              title: appLocalizations.add,
+            );
+          },
+        );
+      },
+      context: context,
+    );
+  }
+
+  Future<void> _handleRestartCore() async {
+    final result = await globalState.showMessage(
+      title: appLocalizations.restartCoreTitle,
+      message: TextSpan(text: appLocalizations.restartCoreDesc),
+    );
+    if (result != true) return;
+    await globalState.appController.restartCore();
+    globalState.showNotifier(appLocalizations.success);
+  }
+
+  Future<void> _showEditTitleDialog() async {
+    final currentTitle =
+        ref.read(appSettingProvider.select((s) => s.dashboardTitle)) ?? '';
+    final title = await globalState.showCommonDialog<String>(
+      child: _DashboardTitleDialog(initialValue: currentTitle),
+    );
+    if (title != null) {
+      ref
+          .read(appSettingProvider.notifier)
+          .updateState(
+            (state) =>
+                state.copyWith(dashboardTitle: title.isEmpty ? null : title),
+          );
+    }
+  }
+
+  void _handleUpdateIsEdit() {
+    _isEditNotifier.value = !_isEditNotifier.value;
+  }
 
   @override
   Widget build(BuildContext context) {
-    final platform = widget.platform ?? SupportPlatform.currentPlatform;
-    final viewSize = ref.watch(viewSizeProvider);
-    final sideWidth = ref.watch(sideWidthProvider);
-    final scale = math.max(1.0, MediaQuery.textScalerOf(context).scale(1));
-    final size = Size(viewSize.width - sideWidth, viewSize.height) / scale;
-    final editable = !DashboardDensity.of(size).isDesktop;
-    if (!editable) {
-      _editing = false;
-    }
-    final editing = _editing;
-    final gap = cardSpacingOf(context, ref.watch(viewModeProvider));
-    final appLocalizations = context.appLocalizations;
+    final dashboardWidgets = ref.watch(
+      dashboardStateProvider.select((state) => state.dashboardWidgets),
+    );
+    final isMobileView = ref.watch(isMobileViewProvider);
+    final (customTitle, showStartSwitch) = ref.watch(
+      appSettingProvider.select(
+        (state) => (state.dashboardTitle, state.showStartSwitch),
+      ),
+    );
+    final isDark = ref.watch(
+      currentBrightnessProvider.select(
+        (brightness) => brightness == Brightness.dark,
+      ),
+    );
+
+    final spacing = 12.mAp;
+    final sizes = ref.watch(
+      appSettingProvider.select(
+        (state) => system.isAndroid
+            ? state.mobileDashboardSizes
+            : state.desktopDashboardSizes,
+      ),
+    );
+    final children = <DashboardTile>[
+      for (final item in dashboardWidgets)
+        if (item.platforms.contains(SupportPlatform.currentPlatform))
+          (widget: item, size: resolveDashboardSize(item, sizes)),
+    ];
+
+    final title = customTitle ?? appLocalizations.dashboard;
     return CommonScaffold(
-      backgroundColor: DashboardColors.of(context).page,
-      title: editing
-          ? appLocalizations.editDashboard
-          : appLocalizations.dashboard,
-      actions: [if (!editing && coreLib == null) const CoreStatusButton()],
-      confirmationAction: editing
-          ? IconButtonData(
-              glyph: AppGlyphs.check,
-              tooltip: appLocalizations.done,
-              onPressed: () => _setEditing(false),
+      title: title,
+      titleWidget: globalState.isPre
+          ? Row(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Flexible(
+                  child: EmojiText(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const _PreviewMark(),
+              ],
             )
           : null,
-      iconActions: [
-        if (editable && !editing)
-          IconButtonData(
-            glyph: AppGlyphs.edit,
-            tooltip: appLocalizations.editDashboard,
-            onPressed: () => _setEditing(true),
-          ),
-      ],
-      // The providers learn a resize a frame late, too late for the cards.
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          final room = constraints.biggest / scale;
-          final layout = DashboardDensity.of(room);
-          return DashboardDensityScope(
-            density: layout,
-            scale: scale,
-            child: layout.isDesktop
-                ? _DesktopDashboard(
-                    platform: platform,
-                    columns: dashboardColumnsOf(room.width),
-                    gap: gap,
-                  )
-                : _MobileDashboard(
-                    platform: platform,
-                    gap: gap,
-                    editing: editing,
-                    cardKeyOf: _cardKeyOf,
-                    onDone: () => _setEditing(false),
+      actions: _buildActions(showStartSwitch, isDark),
+      body: ScrollEdgeRise(
+        builder: (_, rise) => Align(
+          alignment: Alignment.topCenter,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final contentWidth = math.min(
+                constraints.maxWidth,
+                dashboardMaxGridWidth,
+              );
+              final int columns = isMobileView
+                  ? 8
+                  : DashboardGridBand.of(contentWidth).columns;
+              final bottomReserve = isMobileView
+                  ? getFloatingBottomBarReserveHeight(context)
+                  : 0.0;
+              final verticalPadding = 32.0 + bottomReserve;
+              final unitHeight = dashboardUnitHeight(
+                contentWidth,
+                availableHeight: constraints.hasBoundedHeight
+                    ? constraints.maxHeight - rise
+                    : null,
+                spacing: spacing,
+                verticalPadding: verticalPadding,
+              );
+
+              final dashboardContent = ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxWidth: dashboardMaxGridWidth,
+                ),
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.fromLTRB(
+                    16,
+                    16 + rise,
+                    16,
+                    16 + bottomReserve,
                   ),
-          );
-        },
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _buildIsEdit(
+                        (isEdit) => isEdit
+                            ? SystemBackBlock(
+                                child: CommonPopScope(
+                                  onPop: () {
+                                    _handleUpdateIsEdit();
+                                    return false;
+                                  },
+                                  child: const SizedBox.shrink(),
+                                ),
+                              )
+                            : const SizedBox.shrink(),
+                      ),
+                      _buildIsEdit(
+                        (isEdit) => EditableGrid<DashboardTile>(
+                          key: const ValueKey('dashboard-grid'),
+                          items: children,
+                          editing: isEdit,
+                          crossAxisCount: columns,
+                          crossAxisSpacing: spacing,
+                          mainAxisSpacing: spacing,
+                          keyOf: (tile) => tile.widget.family,
+                          crossAxisCellCountOf: (tile) => tile.size.cross * 4,
+                          itemBuilder: (_, tile) => buildDashboardTile(tile),
+                          canResize: (tile) => tile.widget.resizable,
+                          onResize: _resizeWidget,
+                          canDelete: (tile) => tile.widget.widget.isDeletable,
+                          onDelete: _deleteWidget,
+                          onMove: _moveWidget,
+                          overlayWrapper: (child) => DashboardWidgetMetrics(
+                            unitHeight: unitHeight,
+                            spacing: spacing,
+                            columns: columns,
+                            child: child,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+
+              return DashboardWidgetMetrics(
+                unitHeight: unitHeight,
+                spacing: spacing,
+                columns: columns,
+                child: dashboardContent,
+              );
+            },
+          ),
+        ),
       ),
     );
   }
 }
 
-/// Four columns fill the window, the tables taking what the rows above them
-/// leave. A window too short for the tables, and every two column one, gets
-/// the summary cards instead, so no list scrolls inside a page that scrolls.
-class _DesktopDashboard extends StatelessWidget {
-  const _DesktopDashboard({
-    required this.platform,
-    required this.columns,
-    required this.gap,
-  });
+List<GridItem> packGridItems(List<GridItem> items, int totalColumns) {
+  if (items.isEmpty) return const [];
+  final pool = List<GridItem>.from(items);
+  final packed = <GridItem>[];
+  var remainingColumns = totalColumns;
 
-  final SupportPlatform platform;
-  final int columns;
-  final double gap;
+  while (pool.isNotEmpty) {
+    final index = pool.indexWhere(
+      (item) =>
+          math.min(item.crossAxisCellCount, totalColumns) <= remainingColumns,
+    );
+    if (index != -1) {
+      final item = pool.removeAt(index);
+      packed.add(item);
+      remainingColumns -= math.min(item.crossAxisCellCount, totalColumns);
+      if (remainingColumns <= 0) {
+        remainingColumns = totalColumns;
+      }
+    } else {
+      remainingColumns = totalColumns;
+    }
+  }
+
+  return packed;
+}
+
+class _AddDashboardWidgetModal extends StatelessWidget {
+  final List<GridItem> items;
+  final void Function(GridItem item) onAdd;
+
+  const _AddDashboardWidgetModal({required this.items, required this.onAdd});
 
   @override
   Widget build(BuildContext context) {
-    final density = DashboardDensityScope.of(context);
-    final compact = density.isCompact;
-    final scale = DashboardDensityScope.scaleOf(context);
-    final base = EdgeInsetsDirectional.fromSTEB(
-      16,
-      context.contentTopPadding,
-      24,
-      24 + MediaQuery.paddingOf(context).bottom,
-    );
-    final topHeight = (compact ? 176 : 208) * scale;
-    final controlHeight = (compact ? 56 : 64) * scale;
-    final middleHeight = (compact ? 152 : 176) * scale;
-    final tablesHeight = connectionsTableMinHeight(density, scale);
-    final summaryHeight = (compact ? 112 : 120) * scale;
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final room =
-            constraints.maxWidth - base.horizontal - gap * (columns - 1);
-        final column = math.min(room / columns, _maxColumnWidth * scale);
-        final inset = (room - column * columns) / 2;
-        final padding = base.copyWith(
-          start: base.start + inset,
-          end: base.end + inset,
-        );
-        double span(int columns) => column * columns + gap * (columns - 1);
-        Widget row(List<(int, Widget)> cards) => Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          spacing: gap,
-          children: [
-            for (final (columns, card) in cards)
-              SizedBox(
-                width: span(columns),
-                child: RepaintBoundary(child: card),
-              ),
-          ],
-        );
-        Widget sized(double height, Widget child) =>
-            SizedBox(height: height, child: child);
-        final switches =
-            DashboardWidget.networkTakeover.platforms.contains(platform)
-            ? const [
-                (1, NetworkTakeoverTile(TakeoverSwitch.systemProxy)),
-                (1, NetworkTakeoverTile(TakeoverSwitch.tun)),
-              ]
-            : const [(2, VpnTile())];
-        final half = columns ~/ 2;
-        final summaries = row([
-          (half, const ConnectionStatsCard()),
-          (half, const ProxyGroupsSummaryCard()),
-        ]);
-        if (columns == 2) {
-          return SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: padding,
-            child: Column(
-              spacing: gap,
-              children: [
-                sized(
-                  topHeight,
-                  const RepaintBoundary(child: CurrentOutboundCard()),
-                ),
-                sized(
-                  topHeight,
-                  row(const [
-                    (1, SpeedCard(direction: TrafficDirection.upload)),
-                    (1, SpeedCard(direction: TrafficDirection.download)),
-                  ]),
-                ),
-                sized(
-                  controlHeight,
-                  const RepaintBoundary(child: OutboundModeBar()),
-                ),
-                sized(controlHeight, row(switches)),
-                sized(
-                  middleHeight,
-                  row(const [(1, IntranetIpCard()), (1, ProfilesCard())]),
-                ),
-                sized(
-                  middleHeight,
-                  row(const [(1, ServiceStatusCard()), (1, MemoryInfo())]),
-                ),
-                sized(summaryHeight, summaries),
-              ],
-            ),
-          );
-        }
-        final rows = [
-          sized(
-            topHeight,
-            row(const [
-              (2, CurrentOutboundCard()),
-              (1, SpeedCard(direction: TrafficDirection.upload)),
-              (1, SpeedCard(direction: TrafficDirection.download)),
-            ]),
+    final spacing = 12.mAp;
+    const columns = 8;
+    final packedItems = packGridItems(items, columns);
+    return DashboardWidgetMetrics(
+      unitHeight: 84.0.ap,
+      spacing: spacing,
+      columns: columns,
+      child: DeferredPointerHandler(
+        child: SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(
+            16,
+            16,
+            16,
+            16 + MediaQuery.paddingOf(context).bottom,
           ),
-          sized(
-            controlHeight,
-            row([(2, const OutboundModeBar()), ...switches]),
-          ),
-          sized(
-            middleHeight,
-            row([
-              (1, const IntranetIpCard()),
-              (1, const ProfilesCard()),
-              (
-                1,
-                ServiceStatusCard(
-                  columns: column >= _servicePairColumnMin * scale ? 2 : 1,
+          child: Grid(
+            crossAxisCount: columns,
+            crossAxisSpacing: spacing,
+            mainAxisSpacing: spacing,
+            children: [
+              for (final item in packedItems)
+                item.wrap(
+                  builder: (child) {
+                    return _AddedContainer(
+                      onAdd: () => onAdd(item),
+                      child: child,
+                    );
+                  },
                 ),
-              ),
-              (1, const MemoryInfo()),
-            ]),
+            ],
           ),
-        ];
-        final rowsHeight =
-            padding.vertical +
-            topHeight +
-            controlHeight +
-            middleHeight +
-            gap * 3;
-        final tablesFit = constraints.maxHeight >= rowsHeight + tablesHeight;
-        final fills = constraints.maxHeight >= rowsHeight + summaryHeight;
-        return SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: SizedBox(
-            height: fills ? constraints.maxHeight : null,
-            child: Padding(
-              padding: padding,
-              child: Column(
-                spacing: gap,
-                children: [
-                  ...rows,
-                  if (tablesFit)
-                    Expanded(
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        spacing: gap,
-                        children: const [
-                          Expanded(
-                            flex: 3,
-                            child: RepaintBoundary(
-                              child: ConnectionsTableCard(),
-                            ),
-                          ),
-                          Expanded(
-                            flex: 2,
-                            child: RepaintBoundary(child: ProxyGroupsCard()),
-                          ),
-                        ],
-                      ),
-                    )
-                  else if (fills)
-                    Expanded(child: summaries)
-                  else
-                    sized(summaryHeight, summaries),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
+        ),
+      ),
     );
   }
 }
 
-class _MobileDashboard extends ConsumerWidget {
-  const _MobileDashboard({
-    required this.platform,
-    required this.gap,
-    required this.editing,
-    required this.cardKeyOf,
-    required this.onDone,
-  });
+class _AddedContainer extends StatelessWidget {
+  final Widget child;
+  final VoidCallback onAdd;
 
-  final SupportPlatform platform;
-  final double gap;
-  final bool editing;
-  final GlobalKey Function(DashboardWidget widget) cardKeyOf;
-  final VoidCallback onDone;
+  const _AddedContainer({required this.child, required this.onAdd});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final saved = ref.watch(
-      dashboardStateProvider.select((state) => state.dashboardWidgets),
-    );
-    final top = context.contentTopPadding;
-    final bottom = 16 + context.bottomInset;
-    return CustomScrollView(
-      // A viewport per card lays them all out and holds the scroll end still.
-      scrollCacheExtent: editing
-          ? ScrollCacheExtent.viewport(DashboardWidget.values.length.toDouble())
-          : null,
-      slivers: [
-        SliverLayoutBuilder(
-          builder: (context, constraints) {
-            final side = dashboardMobileSideOf(constraints.crossAxisExtent);
-            final widgets = [
-              for (final widget in saved)
-                if (widget.platforms.contains(platform)) widget,
-            ];
-            if (editing) {
-              return DashboardEditor(
-                platform: platform,
-                widgets: widgets,
-                cardKeyOf: cardKeyOf,
-                padding: EdgeInsets.fromLTRB(side, top, side, bottom),
-                gap: gap,
-                onDone: onDone,
-              );
-            }
-            return SliverPadding(
-              padding: EdgeInsets.fromLTRB(side, top, side, bottom),
-              // A lazy list estimates the cards it has not laid out from the
-              // ones it has; cards this uneven move the scroll end as it goes.
-              sliver: SliverToBoxAdapter(
-                child: Column(
-                  spacing: gap,
-                  children: [
-                    for (final widget in widgets)
-                      RepaintBoundary(
-                        key: cardKeyOf(widget),
-                        child: widget.card,
-                      ),
-                  ],
-                ),
+  Widget build(BuildContext context) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        ActivateBox(child: child),
+        Positioned(
+          top: -8,
+          right: -8,
+          child: DeferPointer(
+            child: SizedBox(
+              width: 24,
+              height: 24,
+              child: IconButton.filled(
+                iconSize: 20,
+                padding: const EdgeInsets.all(2),
+                onPressed: onAdd,
+                icon: const Icon(Icons.add),
               ),
-            );
-          },
+            ),
+          ),
         ),
       ],
     );
+  }
+}
+
+class _DashboardTitleDialog extends StatefulWidget {
+  final String initialValue;
+
+  const _DashboardTitleDialog({required this.initialValue});
+
+  @override
+  State<_DashboardTitleDialog> createState() => _DashboardTitleDialogState();
+}
+
+class _DashboardTitleDialogState extends State<_DashboardTitleDialog> {
+  late final TextEditingController _controller;
+  String? _errorText;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialValue);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _validate(String value) {
+    int len = 0;
+    for (int i = 0; i < value.length; i++) {
+      len += value.codeUnitAt(i) > 127 ? 2 : 1;
+    }
+    final nextErrorText = len > 20 ? appLocalizations.titleTooLong : null;
+    if (nextErrorText != _errorText) {
+      setState(() {
+        _errorText = nextErrorText;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return CommonDialog(
+      title: appLocalizations.customDashboardTitle,
+      actions: [
+        TextButton(
+          onPressed: () {
+            Navigator.of(context).pop();
+          },
+          child: Text(appLocalizations.cancel),
+        ),
+        TextButton(
+          onPressed: _errorText == null
+              ? () {
+                  Navigator.of(context).pop(_controller.text);
+                }
+              : null,
+          child: Text(appLocalizations.confirm),
+        ),
+      ],
+      child: Padding(
+        padding: const EdgeInsets.only(top: 8.0),
+        child: TextField(
+          controller: _controller,
+          decoration: InputDecoration(
+            hintText: 'Have fun with Bettbox',
+            errorText: _errorText,
+            border: const OutlineInputBorder(),
+          ),
+          onChanged: _validate,
+        ),
+      ),
+    );
+  }
+}
+
+class _DashboardStartSwitch extends ConsumerStatefulWidget {
+  const _DashboardStartSwitch({super.key});
+
+  @override
+  ConsumerState<_DashboardStartSwitch> createState() =>
+      _DashboardStartSwitchState();
+}
+
+class _DashboardStartSwitchState extends ConsumerState<_DashboardStartSwitch> {
+  bool _isDisabled = false;
+  bool? _optimisticStart;
+  FocusNode? _focusNode;
+
+  @override
+  void initState() {
+    super.initState();
+    if (globalState.isAndroidTV) {
+      _focusNode = FocusNode()..addListener(_onFocusChange);
+    }
+  }
+
+  @override
+  void dispose() {
+    _focusNode?.removeListener(_onFocusChange);
+    _focusNode?.dispose();
+    super.dispose();
+  }
+
+  void _onFocusChange() {
+    globalState.isDashboardStartSwitchFocused = _focusNode?.hasFocus ?? false;
+  }
+
+  void requestFocus() {
+    _focusNode?.requestFocus();
+  }
+
+  Future<void> _handleStart() async {
+    if (_isDisabled) return;
+    final isStart = ref.read(runTimeProvider) != null;
+    final newState = !isStart;
+    setState(() {
+      _isDisabled = true;
+      _optimisticStart = newState;
+    });
+
+    try {
+      await globalState.appController.updateStatus(newState);
+    } catch (e) {
+      commonPrint.error('updateStatus failed: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isDisabled = false;
+          _optimisticStart = null;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final (isInit, hasProfile) = ref.watch(
+      startButtonSelectorStateProvider.select(
+        (state) => (state.isInit, state.hasProfile),
+      ),
+    );
+    final isRestarting = ref.watch(isRestartingCoreProvider);
+    final isSmartStopped = ref.watch(isSmartStoppedProvider);
+    final isStart = ref.watch(runTimeProvider.select((state) => state != null));
+    final displayStart = isSmartStopped ? false : (_optimisticStart ?? isStart);
+
+    final canPress =
+        isInit &&
+        hasProfile &&
+        !_isDisabled &&
+        !isRestarting &&
+        !isSmartStopped;
+
+    final colorScheme = context.colorScheme;
+    final isLight = colorScheme.brightness == Brightness.light;
+    final isBusy = _isDisabled || isRestarting;
+    final isAvailable = isInit && hasProfile && !isSmartStopped;
+    final (style, onLabel, offLabel) = ref.watch(
+      appSettingProvider.select(
+        (state) => (
+          state.startSwitchStyle,
+          state.startSwitchOnLabel,
+          state.startSwitchOffLabel,
+        ),
+      ),
+    );
+    final isOutlined = style == StartSwitchStyle.outlined;
+    final trackColor = isOutlined
+        ? isLight
+              ? Color.lerp(
+                  colorScheme.surface,
+                  colorScheme.surfaceContainerLowest,
+                  0.5,
+                )
+              : colorScheme.surfaceContainerHigh
+        : displayStart
+        ? colorScheme.primary.withValues(alpha: isLight ? 0.12 : 0.2)
+        : colorScheme.onSurface.withValues(alpha: 0.06);
+    final borderSide = isOutlined
+        ? BorderSide(
+            color: displayStart
+                ? colorScheme.primary.withValues(alpha: 0.45)
+                : colorScheme.outlineVariant.withValues(
+                    alpha: isLight ? 0.45 : 0.25,
+                  ),
+          )
+        : BorderSide.none;
+    final iconColor = displayStart
+        ? colorScheme.primary
+        : colorScheme.onSurfaceVariant;
+    final labelMediumStyle = context.textTheme.labelMedium;
+    final labels = [
+      (
+        offLabel ?? appLocalizations.disabled,
+        !displayStart,
+        colorScheme.onSurfaceVariant,
+      ),
+      (onLabel ?? appLocalizations.enabled, displayStart, colorScheme.primary),
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+      child: AnimatedOpacity(
+        opacity: isAvailable ? 1 : 0.38,
+        duration: midDuration,
+        child: TextButton(
+          focusNode: _focusNode,
+          onPressed: canPress ? _handleStart : null,
+          style: ButtonStyle(
+            visualDensity: VisualDensity.standard,
+            padding: const WidgetStatePropertyAll(
+              EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            ),
+            minimumSize: const WidgetStatePropertyAll(Size.zero),
+            backgroundColor: WidgetStatePropertyAll(trackColor),
+            shape: WidgetStateProperty.resolveWith(
+              (states) => StadiumBorder(
+                side: states.contains(WidgetState.focused)
+                    ? BorderSide(color: colorScheme.primary, width: 2)
+                    : borderSide,
+              ),
+            ),
+          ),
+          child: Stack(
+            children: [
+              AnimatedPadding(
+                duration: midDuration,
+                curve: Curves.easeOutCubic,
+                padding: EdgeInsetsDirectional.only(
+                  start: displayStart ? 4 : 26,
+                  end: displayStart ? 26 : 4,
+                ),
+                child: SizedBox(
+                  height: 24,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      for (final (label, isActive, color) in labels)
+                        AnimatedOpacity(
+                          opacity: isActive ? 1 : 0,
+                          duration: midDuration,
+                          child: Text(
+                            label,
+                            maxLines: 1,
+                            style: labelMediumStyle?.copyWith(color: color),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+              Positioned.fill(
+                child: AnimatedAlign(
+                  duration: midDuration,
+                  curve: Curves.easeOutCubic,
+                  alignment: displayStart
+                      ? AlignmentDirectional.centerEnd
+                      : AlignmentDirectional.centerStart,
+                  child: SizedBox.square(
+                    dimension: 20,
+                    child: Center(
+                      child: isBusy
+                          ? RepaintBoundary(
+                              child: SizedBox.square(
+                                dimension: 14,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: iconColor,
+                                ),
+                              ),
+                            )
+                          : Icon(
+                              Icons.power_settings_new,
+                              size: 18,
+                              color: iconColor,
+                            ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PreviewMark extends StatelessWidget {
+  const _PreviewMark();
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = context.colorScheme;
+    return Container(
+      margin: const EdgeInsets.only(top: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(5),
+        border: Border.all(color: colorScheme.primary.withValues(alpha: 0.6)),
+      ),
+      child: Text(
+        kDebugMode ? 'DEBUG' : 'PRE',
+        style: context.textTheme.labelSmall?.copyWith(
+          fontSize: 9.5,
+          height: 1.3,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.8,
+          color: colorScheme.primary,
+        ),
+      ),
+    );
+  }
+}
+
+class _MenuDots extends ConsumerWidget {
+  final bool isOpen;
+
+  const _MenuDots({required this.isOpen});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isStart = ref.watch(runTimeProvider.select((value) => value != null));
+    final colorScheme = context.colorScheme;
+    final color = IconTheme.of(context).color ?? colorScheme.onSurfaceVariant;
+    return RepaintBoundary(
+      child: AnimatedRotation(
+        turns: isOpen ? 0.125 : 0,
+        duration: midDuration,
+        curve: Curves.easeOutBack,
+        child: TweenAnimationBuilder<Color?>(
+          tween: ColorTween(end: isStart ? colorScheme.primary : color),
+          duration: midDuration,
+          builder: (_, accent, _) => SizedBox.square(
+            dimension: 24,
+            child: CustomPaint(
+              painter: _MenuDotsPainter(color: color, accent: accent ?? color),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MenuDotsPainter extends CustomPainter {
+  static final Paint _paint = Paint();
+
+  final Color color;
+  final Color accent;
+
+  const _MenuDotsPainter({required this.color, required this.accent});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const radius = 2.6;
+    const distance = 5.2;
+    final center = size.center(Offset.zero);
+    _paint.color = color;
+    canvas.drawCircle(
+      center + const Offset(-distance, -distance),
+      radius,
+      _paint,
+    );
+    canvas.drawCircle(
+      center + const Offset(-distance, distance),
+      radius,
+      _paint,
+    );
+    canvas.drawCircle(
+      center + const Offset(distance, distance),
+      radius,
+      _paint,
+    );
+    _paint.color = accent;
+    canvas.drawCircle(
+      center + const Offset(distance, -distance),
+      radius,
+      _paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_MenuDotsPainter oldDelegate) {
+    return oldDelegate.color != color || oldDelegate.accent != accent;
   }
 }

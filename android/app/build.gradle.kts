@@ -1,4 +1,3 @@
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.util.Properties
 
 plugins {
@@ -7,25 +6,19 @@ plugins {
 }
 
 val localProperties = Properties().apply {
-    val localPropertiesFile = rootProject.file("local.properties")
-    if (localPropertiesFile.exists()) {
-        localPropertiesFile.inputStream().use { load(it) }
-    }
+    rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use { load(it) }
 }
 
-val releaseStoreFile = file("keystore.jks")
-val releaseStorePassword = localProperties.getProperty("storePassword")
-val releaseKeyAlias = localProperties.getProperty("keyAlias")
-val releaseKeyPassword = localProperties.getProperty("keyPassword")
-val hasReleaseSigning = releaseStoreFile.exists() &&
-    releaseStorePassword != null &&
-    releaseKeyAlias != null &&
-    releaseKeyPassword != null
+val mStoreFile = file("keystore.jks")
+val mStorePassword: String? = localProperties.getProperty("storePassword")
+val mKeyAlias: String? = localProperties.getProperty("keyAlias")
+val mKeyPassword: String? = localProperties.getProperty("keyPassword")
+val isRelease = mStoreFile.exists() && mStorePassword != null && mKeyAlias != null && mKeyPassword != null
 
 android {
     namespace = "com.outo.app"
-    compileSdk = libs.versions.compileSdk.get().toInt()
-    ndkVersion = libs.versions.ndkVersion.get()
+    compileSdk = 36
+    ndkVersion = "28.2.13676358"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -34,20 +27,33 @@ android {
 
     defaultConfig {
         applicationId = "com.outo.app"
-        minSdk = flutter.minSdkVersion
-        targetSdk = libs.versions.targetSdk.get().toInt()
+        minSdk = 26
+        targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
 
     signingConfigs {
-        if (hasReleaseSigning) {
+        if (isRelease) {
             create("release") {
-                storeFile = releaseStoreFile
-                storePassword = releaseStorePassword
-                keyAlias = releaseKeyAlias
-                keyPassword = releaseKeyPassword
+                storeFile = mStoreFile
+                storePassword = mStorePassword
+                keyAlias = mKeyAlias
+                keyPassword = mKeyPassword
             }
+        }
+    }
+
+    buildTypes {
+        debug {
+            isMinifyEnabled = false
+            applicationIdSuffix = ".debug"
+        }
+        release {
+            isMinifyEnabled = true
+            isDebuggable = false
+            signingConfig = signingConfigs.getByName(if (isRelease) "release" else "debug")
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
 
@@ -57,37 +63,16 @@ android {
         }
     }
 
-    buildTypes {
-        debug {
-            isMinifyEnabled = false
-            applicationIdSuffix = ".dev"
+    applicationVariants.all {
+        outputs.all {
+            (this as? com.android.build.gradle.internal.api.ApkVariantOutputImpl)?.versionCodeOverride = flutter.versionCode
         }
-
-        release {
-            isMinifyEnabled = false
-            isShrinkResources = false
-            if (hasReleaseSigning) {
-                signingConfig = signingConfigs.getByName("release")
-            } else {
-                signingConfig = signingConfigs.getByName("debug")
-            }
-
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro",
-            )
-        }
-    }
-
-    sourceSets {
-        // Unit tests live under android/tests/ instead of each module's src/test.
-        getByName("test").java.setSrcDirs(listOf("../tests/app"))
     }
 }
 
 kotlin {
     compilerOptions {
-        jvmTarget.set(JvmTarget.JVM_17)
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
     }
 }
 
@@ -96,14 +81,18 @@ flutter {
 }
 
 dependencies {
-    implementation(project(":service"))
-    implementation(project(":common"))
     implementation(project(":core"))
-    implementation(libs.core.splashscreen)
-    implementation(libs.gson)
-    implementation(libs.smali.dexlib2) {
+    implementation("com.google.code.gson:gson:2.10.1")
+    implementation("com.android.tools.smali:smali-dexlib2:3.0.9") {
         exclude(group = "com.google.guava", module = "guava")
     }
-    testImplementation(libs.junit)
-    testImplementation(libs.kotlinx.coroutines.test)
+    implementation("androidx.core:core-splashscreen:1.0.1")
+}
+
+configurations.all {
+    resolutionStrategy {
+        eachDependency {
+            if (requested.group == "androidx.datastore") useVersion("1.1.2")
+        }
+    }
 }

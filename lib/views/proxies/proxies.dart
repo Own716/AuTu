@@ -1,21 +1,24 @@
-import 'package:outo/common/common.dart';
-import 'package:outo/enum/enum.dart';
-import 'package:outo/models/models.dart';
-import 'package:outo/providers/providers.dart';
-import 'package:outo/ui/icons/icons.dart';
-import 'package:outo/views/proxies/list.dart';
-import 'package:outo/widgets/widgets.dart';
+import 'package:bett_box/common/common.dart';
+import 'package:bett_box/enum/enum.dart';
+import 'package:bett_box/models/common.dart';
+import 'package:bett_box/models/config.dart';
+import 'package:bett_box/models/widget.dart';
+import 'package:bett_box/providers/providers.dart';
+import 'package:bett_box/state.dart';
+import 'package:bett_box/views/proxies/list.dart';
+import 'package:bett_box/views/proxies/providers.dart';
+import 'package:bett_box/widgets/widgets.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../profiles/scripts.dart'
+    show showGroupSwitchOptions, showScriptCustomOptions;
+import 'advanced_settings.dart';
+import 'setting.dart';
 import 'tab.dart';
 
 class ProxiesView extends ConsumerStatefulWidget {
-  const ProxiesView({super.key, this.picker = false});
-
-  /// Leaves the bar only its search and delay test, for picking a proxy from a
-  /// sheet.
-  final bool picker;
+  const ProxiesView({super.key});
 
   @override
   ConsumerState<ProxiesView> createState() => _ProxiesViewState();
@@ -23,118 +26,191 @@ class ProxiesView extends ConsumerStatefulWidget {
 
 class _ProxiesViewState extends ConsumerState<ProxiesView> {
   final GlobalKey<ProxiesTabViewState> _proxiesTabKey = GlobalKey();
-
-  // The same instance on every build, so the bar changing with the current
-  // group or its delay test leaves the page alone.
-  late final _tabView = ProxiesTabView(key: _proxiesTabKey);
+  bool _hasProviders = false;
   bool _isTab = false;
 
-  void _updateStyle(
-    ProxiesStyleProps Function(ProxiesStyleProps state) update,
-  ) {
-    ref.read(proxiesStyleSettingProvider.notifier).update(update);
-  }
-
-  List<CommonPopupMenuItem> _buildMenuItems(
-    BuildContext context,
-    ProxiesStyleProps style,
-  ) {
-    final appLocalizations = context.appLocalizations;
+  List<Widget> _buildActions() {
+    final (autoStickyHeader, showHiddenItems) = ref.watch(
+      proxiesStyleSettingProvider.select(
+        (state) => (state.autoStickyHeader, state.showHiddenItems),
+      ),
+    );
+    final (scriptOn, compatible) = ref.watch(
+      scriptStateProvider.select(
+        (s) => (s.currentId != null, s.currentScript?.compatible ?? false),
+      ),
+    );
+    final profileOverride = ref.watch(
+      currentProfileProvider.select((p) => p?.useScriptOverride ?? false),
+    );
+    final hasScriptCustom = scriptOn && compatible && profileOverride;
+    final hasGroupCustom =
+        !hasScriptCustom && ref.read(currentProfileIdProvider) != null;
+    final hasCustom = hasScriptCustom || hasGroupCustom;
     return [
-      _optionsMenuItem(
-        glyph: AppGlyphs.appsList,
-        label: appLocalizations.style,
-        section: const CommonPopupMenuSection(),
-        options: ProxiesType.values,
-        value: style.type,
-        textOf: (type) => type.label,
-        onSelected: (type) =>
-            _updateStyle((state) => state.copyWith(type: type)),
-      ),
-      _optionsMenuItem(
-        glyph: AppGlyphs.sort,
-        label: appLocalizations.sort,
-        options: ProxiesSortType.values,
-        value: style.sortType,
-        textOf: (type) => switch (type) {
-          ProxiesSortType.none => appLocalizations.defaultText,
-          ProxiesSortType.delay => appLocalizations.delay,
-          ProxiesSortType.name => appLocalizations.name,
-        },
-        onSelected: (type) =>
-            _updateStyle((state) => state.copyWith(sortType: type)),
-      ),
-      _optionsMenuItem(
-        glyph: AppGlyphs.dashboard,
-        label: appLocalizations.layout,
-        options: ProxiesLayout.values,
-        value: style.layout,
-        textOf: (layout) => switch (layout) {
-          ProxiesLayout.tight => appLocalizations.tight,
-          ProxiesLayout.standard => appLocalizations.standard,
-          ProxiesLayout.loose => appLocalizations.loose,
-        },
-        onSelected: (layout) =>
-            _updateStyle((state) => state.copyWith(layout: layout)),
-      ),
-      _optionsMenuItem(
-        glyph: AppGlyphs.textSize,
-        label: appLocalizations.size,
-        options: ProxyCardType.values,
-        value: style.cardType,
-        textOf: (type) => type.label,
-        onSelected: (type) =>
-            _updateStyle((state) => state.copyWith(cardType: type)),
-      ),
-      if (style.type == ProxiesType.list)
-        _optionsMenuItem(
-          glyph: AppGlyphs.iconTile,
-          label: appLocalizations.iconStyle,
-          options: ProxiesIconStyle.values,
-          value: style.iconStyle,
-          textOf: (iconStyle) => switch (iconStyle) {
-            ProxiesIconStyle.filled => appLocalizations.iconStyleFilled,
-            ProxiesIconStyle.plain => appLocalizations.iconStylePlain,
-            ProxiesIconStyle.hidden => appLocalizations.iconStyleHidden,
+      if (_isTab)
+        IconButton(
+          onPressed: () {
+            _proxiesTabKey.currentState?.scrollToGroupSelected();
           },
-          onSelected: (iconStyle) =>
-              _updateStyle((state) => state.copyWith(iconStyle: iconStyle)),
+          tooltip: appLocalizations.locate,
+          icon: const Icon(Icons.adjust, weight: 1),
         ),
-      CommonPopupMenuItem(
-        glyph: AppGlyphs.eyeOff,
-        label: appLocalizations.hideTimeoutProxies,
-        checked: style.hideTimeoutProxies,
-        section: const CommonPopupMenuSection(),
-        onPressed: () => _updateStyle(
-          (state) =>
-              state.copyWith(hideTimeoutProxies: !state.hideTimeoutProxies),
+      if (hasCustom)
+        IconButton(
+          onPressed: _handleCustomOptions,
+          icon: const Icon(Icons.tune),
+          tooltip: appLocalizations.custom,
+        ),
+      CommonPopupBox(
+        targetBuilder: (open) {
+          return IconButton(
+            onPressed: () {
+              open(offset: const Offset(0, 20));
+            },
+            tooltip: appLocalizations.more,
+            icon: const Icon(Icons.more_vert),
+          );
+        },
+        popup: CommonPopupMenu(
+          items: [
+            PopupMenuItemData(
+              icon: Icons.tune,
+              label: appLocalizations.settings,
+              onPressed: () {
+                showSheet(
+                  context: context,
+                  props: SheetProps(isScrollControlled: true),
+                  builder: (_, type) {
+                    return AdaptiveSheetScaffold(
+                      type: type,
+                      body: const ProxiesSetting(),
+                      title: appLocalizations.settings,
+                    );
+                  },
+                );
+              },
+            ),
+            if (_hasProviders)
+              PopupMenuItemData(
+                icon: Icons.poll_outlined,
+                label: appLocalizations.providers,
+                onPressed: () {
+                  showExtend(
+                    context,
+                    builder: (_, type) {
+                      return ProvidersView(type: type);
+                    },
+                  );
+                },
+              ),
+            PopupMenuItemData(
+              icon: Icons.settings_suggest,
+              label: appLocalizations.advancedSettings,
+              onPressed: () {
+                showExtend(
+                  context,
+                  builder: (_, type) {
+                    return AdaptiveSheetScaffold(
+                      type: type,
+                      body: const ProxiesAdvancedSettings(),
+                      title: appLocalizations.advancedSettings,
+                    );
+                  },
+                );
+              },
+            ),
+            if (!_isTab)
+              PopupMenuItemData(
+                icon: autoStickyHeader
+                    ? Icons.check_circle_rounded
+                    : Icons.circle_outlined,
+                label: appLocalizations.autoStickyHeader,
+                onPressed: () {
+                  ref
+                      .read(proxiesStyleSettingProvider.notifier)
+                      .updateState(
+                        (state) =>
+                            state.copyWith(autoStickyHeader: !autoStickyHeader),
+                      );
+                },
+              ),
+            PopupMenuItemData(
+              icon: showHiddenItems
+                  ? Icons.check_circle_rounded
+                  : Icons.circle_outlined,
+              label: appLocalizations.showHiddenItems,
+              onPressed: () {
+                ref
+                    .read(proxiesStyleSettingProvider.notifier)
+                    .updateState(
+                      (state) =>
+                          state.copyWith(showHiddenItems: !showHiddenItems),
+                    );
+              },
+            ),
+          ],
         ),
       ),
     ];
   }
 
-  IconButtonData? _buildPrimaryAction() {
-    if (!_isTab) {
-      return null;
-    }
-    final isDelayTesting = ref.watch(currentGroupDelayTestingProvider);
-    return IconButtonData(
-      glyph: AppGlyphs.bolt,
-      onPressed: () {
-        _proxiesTabKey.currentState?.delayTestCurrentGroup();
+  Widget? _buildFAB() {
+    if (!_isTab || globalState.isAndroidTV) return null;
+    return Consumer(
+      builder: (_, ref, _) {
+        final isMobileView = ref.watch(isMobileViewProvider);
+        final currentGroupName = ref.watch(
+          proxiesTabControllerStateProvider.select((state) => state.b),
+        );
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: isMobileView
+                ? getFloatingBottomBarFABReserveHeight(context)
+                : 0,
+          ),
+          child: DelayTestButton(
+            groupName: currentGroupName ?? '',
+            onClick: () async {
+              await _proxiesTabKey.currentState?.delayTestCurrentGroup();
+            },
+          ),
+        );
       },
-      tooltip: context.appLocalizations.delayTest,
-      isLoading: isDelayTesting,
     );
   }
 
   void _onSearch(String value) {
-    ref.read(queryProvider(QueryTag.proxies).notifier).value = value;
+    ref.read(queryProvider.notifier).value = value;
+  }
+
+  Future<void> _handleCustomOptions() async {
+    final profileOverride =
+        ref.read(currentProfileProvider)?.useScriptOverride ?? false;
+    final script = ref.read(scriptStateProvider).currentScript;
+    if (script != null && script.compatible && profileOverride) {
+      await showScriptCustomOptions(context, script: script);
+      return;
+    }
+    final profileId = ref.read(currentProfileIdProvider);
+    if (profileId != null) {
+      await showGroupSwitchOptions(context, profileId: profileId);
+    }
   }
 
   @override
   void initState() {
     super.initState();
+    ref.listenManual(providersProvider.select((state) => state.isNotEmpty), (
+      prev,
+      next,
+    ) {
+      if (prev != next) {
+        setState(() {
+          _hasProviders = next;
+        });
+      }
+    }, fireImmediately: true);
     ref.listenManual(
       proxiesStyleSettingProvider.select(
         (state) => state.type == ProxiesType.tab,
@@ -152,56 +228,28 @@ class _ProxiesViewState extends ConsumerState<ProxiesView> {
 
   @override
   Widget build(BuildContext context) {
-    final style = ref.watch(proxiesStyleSettingProvider);
-    final isLoading = ref.watch(loadingProvider(LoadingTag.proxies));
-    final picker = widget.picker;
-    final primaryAction = _buildPrimaryAction();
+    final (proxiesType, autoStickyHeader) = ref.watch(
+      proxiesStyleSettingProvider.select(
+        (state) => (state.type, state.autoStickyHeader),
+      ),
+    );
+    final hasGroups = ref.watch(
+      groupsProvider.select((state) => state.isNotEmpty),
+    );
+    ref.watch(appSettingProvider.select((state) => state.locale));
     return CommonScaffold(
-      isLoading: isLoading,
-      resizeToAvoidBottomInset: false,
-      primaryAction: primaryAction,
-      searchActions: [?primaryAction],
-      iconActions: [
-        if (_isTab && !picker)
-          IconButtonData(
-            glyph: AppGlyphs.locate,
-            onPressed: () {
-              _proxiesTabKey.currentState?.scrollToGroupSelected();
-            },
-            tooltip: context.appLocalizations.scrollToSelected,
-          ),
-      ],
-      menuItems: picker ? const [] : _buildMenuItems(context, style),
-      title: context.appLocalizations.proxies,
+      floatingActionButton: _buildFAB(),
+      actions: _buildActions(),
+      title: appLocalizations.proxies,
+      scrollEdgeFade: proxiesType == ProxiesType.list && !autoStickyHeader,
       searchState: AppBarSearchState(onSearch: _onSearch),
-      body: switch (style.type) {
-        ProxiesType.tab => _tabView,
-        ProxiesType.list => const ProxiesListView(),
+      body: switch (hasGroups) {
+        false => NullStatus(label: appLocalizations.noProxy),
+        true => switch (proxiesType) {
+          ProxiesType.tab => ProxiesTabView(key: _proxiesTabKey),
+          ProxiesType.list => const ProxiesListView(),
+        },
       },
     );
   }
-}
-
-CommonPopupMenuItem _optionsMenuItem<T>({
-  required Glyph glyph,
-  required String label,
-  required List<T> options,
-  required T value,
-  required String Function(T option) textOf,
-  required ValueSetter<T> onSelected,
-  CommonPopupMenuSection? section,
-}) {
-  return CommonPopupMenuItem(
-    glyph: glyph,
-    label: label,
-    section: section,
-    subItems: [
-      for (final option in options)
-        CommonPopupMenuItem(
-          label: textOf(option),
-          checked: option == value,
-          onPressed: () => onSelected(option),
-        ),
-    ],
-  );
 }

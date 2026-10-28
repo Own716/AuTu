@@ -1,58 +1,27 @@
-import 'package:outo/enum/enum.dart';
-import 'package:outo/models/common.dart';
+import 'dart:math' as math;
+
+import 'package:bett_box/state.dart';
 import 'package:flutter/foundation.dart';
-import 'package:intl/intl.dart' show NumberFormat;
 import 'package:material_ui/material_ui.dart';
 
-/// Pinned to English so every locale reads K and M, never 万 or тыс.
-final _compactFormat = NumberFormat.compact(locale: 'en');
-
 extension NumExt on num {
-  String get compact => _compactFormat.format(this);
-
   String fixed({int decimals = 2}) {
-    String formatted = toStringAsFixed(decimals);
-    if (formatted.contains('.')) {
-      formatted = formatted.replaceAll(RegExp(r'0*$'), '');
-      if (formatted.endsWith('.')) {
-        formatted = formatted.substring(0, formatted.length - 1);
-      }
-    }
-    return formatted;
+    return toStringAsFixed(decimals);
   }
 
-  TrafficShow get traffic {
-    const units = TrafficUnit.values;
-    var size = toDouble();
-    var unitIndex = 0;
-    while (size >= 1024 && unitIndex < units.length - 1) {
-      size /= 1024;
-      unitIndex++;
-    }
-    return TrafficShow(
-      value: size.fixed(decimals: 1),
-      unit: units[unitIndex].name,
-    );
+  double get ap {
+    return this * (1 + (globalState.theme.textScaleFactor - 1) * 0.5);
   }
 
-  TrafficShow get shortTraffic {
-    const units = TrafficUnit.values;
-    var size = toDouble();
-    var unitIndex = 0;
-    while (size >= 1024 && unitIndex < units.length - 1) {
-      size /= 1024;
-      unitIndex++;
-    }
-    return TrafficShow(
-      value: size.toStringAsFixed(0),
-      unit: ' ${units[unitIndex].name}',
-    );
+  double get mAp {
+    return this *
+        math.min(1 + (globalState.theme.textScaleFactor - 1) * 0.5, 1.0);
   }
 }
 
 extension DoubleExt on double {
   bool moreOrEqual(double value) {
-    return this > value || (value - this).abs() < precisionErrorTolerance;
+    return this > value || (value - this).abs() < precisionErrorTolerance + 1;
   }
 }
 
@@ -63,5 +32,24 @@ extension OffsetExt on Offset {
 
   double getMainAxisOffset(Axis direction) {
     return direction == Axis.vertical ? dy : dx;
+  }
+
+  bool less(Offset offset) {
+    if (dy < offset.dy) {
+      return true;
+    }
+    if (dy == offset.dy && dx < offset.dx) {
+      return true;
+    }
+    return false;
+  }
+}
+
+extension RectExt on Rect {
+  bool doRectIntersect(Rect rect) {
+    return left < rect.right &&
+        right > rect.left &&
+        top < rect.bottom &&
+        bottom > rect.top;
   }
 }

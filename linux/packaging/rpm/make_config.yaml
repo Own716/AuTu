@@ -1,0 +1,55 @@
+display_name: AuTu
+
+packager: appshub
+packagerEmail: appshubcc@gmail.com
+license: Other
+
+priority: optional
+section: x11
+installed_size: 6604
+essential: false
+icon: ./assets/images/icon.png
+
+requires:
+  - '(/usr/sbin/setcap or /usr/bin/setcap)'
+
+keywords:
+  - AuTu
+  - Clash
+  - ClashMeta
+  - Proxy
+
+generic_name: AuTu
+
+group: Applications/Internet
+
+startup_notify: true
+startup_wm_class: com.outo.app
+
+extra_files:
+  linux/packaging/polkit/90-bettbox.rules: usr/share/polkit-1/rules.d/90-bettbox.rules
+
+install: |
+  mkdir -p %{buildroot}%{_bindir}
+  mkdir -p %{buildroot}%{_datadir}/%{name}
+  mkdir -p %{buildroot}%{_datadir}/applications
+  mkdir -p %{buildroot}%{_datadir}/pixmaps
+  cp -r %{name}/* %{buildroot}%{_datadir}/%{name}
+  ln -s ../share/%{name}/%{name} %{buildroot}%{_bindir}/%{name}
+  cp -r %{name}.desktop %{buildroot}%{_datadir}/applications
+  cp -r %{name}.png %{buildroot}%{_datadir}/pixmaps
+  chmod 0755 %{buildroot}%{_datadir}/%{name}/AuTuCore
+  update-mime-database %{_datadir}/mime &> /dev/null || :
+
+posttrans: |
+  CORE_PATH="%{_datadir}/%{name}/AuTuCore"
+  if [ -f "$CORE_PATH" ]; then
+    setcap 'cap_net_admin,cap_net_bind_service,cap_net_raw=+ep' "$CORE_PATH" && sync
+  fi
+  rm -f /etc/polkit-1/rules.d/90-bettbox.rules /etc/polkit-1/rules.d/99-bettbox.rules /usr/share/polkit-1/rules.d/99-bettbox.rules
+
+postun: |
+  update-mime-database %{_datadir}/mime &> /dev/null || :
+
+attr: |
+  %attr(0755, root, root) %{_datadir}/%{name}/AuTuCore

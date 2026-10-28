@@ -1,0 +1,21 @@
+display_name: AuTu
+
+icon: ./assets/images/icon.png
+
+keywords:
+  - AuTu
+  - Clash
+  - ClashMeta
+  - Proxy
+
+generic_name: AuTu
+
+categories:
+  - Network
+
+startup_notify: true
+startup_wm_class: com.outo.app
+
+include: []
+extra_files:
+  linux/packaging/polkit/90-bettbox.rules: 90-bettbox.rules

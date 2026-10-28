@@ -1,6 +1,4 @@
-import 'package:flutter/widgets.dart';
-
-import 'context.dart';
+import 'package:bett_box/common/app_localizations.dart';
 
 extension DateTimeExtension on DateTime {
   bool get isBeforeNow {
@@ -14,49 +12,30 @@ extension DateTimeExtension on DateTime {
     return true;
   }
 
-  String getLastUpdateTimeDesc(BuildContext context, {bool compact = false}) {
-    final appLocalizations = context.appLocalizations;
-    if (year <= 1970) {
-      return appLocalizations.unknown;
-    }
-    final (yearsAgo, monthsAgo, daysAgo, hoursAgo, minutesAgo) = compact
-        ? (
-            appLocalizations.yearsAgoShort,
-            appLocalizations.monthsAgoShort,
-            appLocalizations.daysAgoShort,
-            appLocalizations.hoursAgoShort,
-            appLocalizations.minutesAgoShort,
-          )
-        : (
-            appLocalizations.yearsAgo,
-            appLocalizations.monthsAgo,
-            appLocalizations.daysAgo,
-            appLocalizations.hoursAgo,
-            appLocalizations.minutesAgo,
-          );
+  String get lastUpdateTimeDesc {
     final currentDateTime = DateTime.now();
     final difference = currentDateTime.difference(this);
     final days = difference.inDays;
     if (days >= 365) {
-      final years = (days / 365).floor();
-      return yearsAgo(years);
+      final count = (days / 365).floor();
+      return '$count ${appLocalizations.years(count)}${appLocalizations.ago}';
     }
     if (days >= 30) {
-      final months = (days / 30).floor();
-      return monthsAgo(months);
+      final count = (days / 30).floor();
+      return '$count ${appLocalizations.months(count)}${appLocalizations.ago}';
     }
     if (days >= 1) {
-      return daysAgo(days);
+      return '$days ${appLocalizations.days(days)}${appLocalizations.ago}';
     }
     final hours = difference.inHours;
     if (hours >= 1) {
-      return hoursAgo(hours);
+      return '$hours ${appLocalizations.hours(hours)}${appLocalizations.ago}';
     }
     final minutes = difference.inMinutes;
     if (minutes >= 1) {
-      return minutesAgo(minutes);
+      return '$minutes ${appLocalizations.minutes(minutes)}${appLocalizations.ago}';
     }
-    return appLocalizations.justNow;
+    return appLocalizations.just;
   }
 
   String get show {
@@ -67,28 +46,11 @@ extension DateTimeExtension on DateTime {
     return toLocal().toString().substring(0, 19);
   }
 
+  String get showFullMillis {
+    return toLocal().toString().substring(0, 23);
+  }
+
   String get showTime {
     return toLocal().toString().substring(10, 19);
   }
-}
-
-String getDateStringLast2(int value) {
-  final valueRaw = '0$value';
-  return valueRaw.substring(valueRaw.length - 2);
-}
-
-String getTimeText(int? timeStamp) {
-  if (timeStamp == null) {
-    return '00:00:00';
-  }
-  final diff = timeStamp / 1000;
-  final inHours = (diff / 3600).floor();
-  if (inHours > 999) {
-    return '999:59:59';
-  }
-  final inMinutes = (diff / 60 % 60).floor();
-  final inSeconds = (diff % 60).floor();
-  final hoursText = inHours.toString().padLeft(2, '0');
-
-  return '$hoursText:${getDateStringLast2(inMinutes)}:${getDateStringLast2(inSeconds)}';
 }

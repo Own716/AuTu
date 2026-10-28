@@ -1,165 +1,132 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:outo/common/common.dart';
-import 'package:outo/core/event.dart';
-import 'package:outo/core/method.dart';
-import 'package:outo/core/spill.dart';
-import 'package:outo/enum/enum.dart';
-import 'package:outo/models/models.dart';
-import 'package:flutter/foundation.dart';
+import 'package:bett_box/common/system.dart';
+import 'package:bett_box/state.dart';
 import 'package:flutter/services.dart';
 
-final _utf8JsonDecoder = utf8.decoder.fuse(json.decoder);
+import '../clash/lib.dart';
 
-Object? _decodeUtf8Json(Uint8List data) => _utf8JsonDecoder.convert(data);
-
-Map<String, Object?> _decodeResponseOf((Uint8List, CoreMethod) request) {
-  final (data, method) = request;
-  final decoded = _decodeUtf8Json(data);
-  return withResultModel(method, Map<String, Object?>.from(decoded as Map));
-}
-
-Future<Map<String, Object?>> _decodeResponse(
-  Uint8List data,
-  CoreMethod method,
-) async {
-  if (data.length < 51200) {
-    return _decodeResponseOf((data, method));
-  }
-  return compute(_decodeResponseOf, (data, method));
-}
-
-abstract mixin class ServiceListener {
-  void onServiceEvent(CoreEvent event) {}
-
-  void onServiceStopped() {}
-}
+typedef NativeEventCallback =
+    Future<void> Function(String method, dynamic arguments);
 
 class Service {
-  static Service? _instance;
-  late MethodChannel methodChannel;
-  static const _coreChannel = MethodChannel('$packageName/core');
+  static final Service _instance = Service._internal();
+  final MethodChannel methodChannel = const MethodChannel('service');
 
-  final ObserverList<ServiceListener> _listeners =
-      ObserverList<ServiceListener>();
-
-  int _commandRevision = 0;
-  bool _startRequested = false;
-
-  factory Service() {
-    _instance ??= Service._internal();
-    return _instance!;
-  }
+  final List<NativeEventCallback> _nativeEventCallbacks = [];
 
   Service._internal() {
-    methodChannel = const MethodChannel('$packageName/service');
-    methodChannel.setMethodCallHandler((call) async {
-      switch (call.method) {
-        case 'event':
-          final methodCall = CoreMethodCall.fromJson(
-            Map<String, Object?>.from(
-              _decodeUtf8Json(call.arguments as Uint8List) as Map,
-            ),
-          );
-          for (final event in coreEventsFromData(methodCall.arguments)) {
-            _dispatch(
-              'Core event ${event.type.name}',
-              (listener) => listener.onServiceEvent(event),
-            );
-          }
-          break;
-        case 'stopped':
-          // A report stamped before the newest command no longer describes it.
-          if (call.arguments != _commandRevision || !_startRequested) {
-            break;
-          }
-          _startRequested = false;
-          _dispatch('stop report', (listener) => listener.onServiceStopped());
-          break;
-        default:
-          throw MissingPluginException();
+    methodChannel.setMethodCallHandler(_handleMethodCall);
+  }
+
+  factory Service() => _instance;
+
+  Future<dynamic> _handleMethodCall(MethodCall call) async {
+    if (call.method == 'runStateChanged') {
+      final state = call.arguments as String?;
+      if (state == 'STOP') {
+        globalState.startTime = null;
+        globalState.appState = globalState.appState.copyWith(runTime: null);
       }
+    }
+    for (final callback in _nativeEventCallbacks) {
+      await callback(call.method, call.arguments);
+    }
+  }
+
+  void addNativeEventCallback(NativeEventCallback callback) {
+    _nativeEventCallbacks.add(callback);
+  }
+
+  void removeNativeEventCallback(NativeEventCallback callback) {
+    _nativeEventCallbacks.remove(callback);
+  }
+
+  Future<bool?> init() => methodChannel.invokeMethod<bool>('init');
+
+  Future<bool?> destroy() => methodChannel.invokeMethod<bool>('destroy');
+
+  Future<bool?> startVpn() async {
+    final options = await clashLib?.getAndroidVpnOptions();
+    return await methodChannel.invokeMethod<bool>('startVpn', {
+      'data': json.encode(options),
     });
   }
 
-  Future<CoreMethodResponse?> invokeMethod(CoreMethodCall call) async {
-    final data = await _coreChannel.invokeMethod<Uint8List>(
-      'invokeMethod',
-      json.encode(call),
-    );
-    if (data == null) {
-      return null;
-    }
-    return resolveSpilledResponse(
-      CoreMethodResponse.fromJson(await _decodeResponse(data, call.method)),
-      method: call.method,
-    );
+  Future<bool?> stopVpn() => methodChannel.invokeMethod<bool>('stopVpn');
+
+  Future<bool?> smartStop() => methodChannel.invokeMethod<bool>('smartStop');
+
+  Future<bool?> smartResume() async {
+    final options = await clashLib?.getAndroidVpnOptions();
+    return await methodChannel.invokeMethod<bool>('smartResume', {
+      'data': json.encode(options),
+    });
   }
 
-  void _dispatch(String label, void Function(ServiceListener) deliver) {
-    for (final listener in List.of(_listeners)) {
-      try {
-        deliver(listener);
-      } catch (error) {
-        commonPrint.log(
-          'Unable to dispatch Android $label: $error',
-          logLevel: LogLevel.error,
-        );
-      }
-    }
+  Future<void> setSmartStopped(bool value) async {
+    await methodChannel.invokeMethod<bool>('setSmartStopped', {'value': value});
   }
 
-  Future<bool> start() async {
-    _startRequested = true;
+  Future<bool> isSmartStopped() async {
+    return await methodChannel.invokeMethod<bool>('isSmartStopped') ?? false;
+  }
+
+  Future<List<String>> getLocalIpAddresses() async {
+    return await methodChannel.invokeListMethod<String>(
+          'getLocalIpAddresses',
+        ) ??
+        const [];
+  }
+
+  Future<List<String>> getLocalGateways() async {
+    return await methodChannel.invokeListMethod<String>('getLocalGateways') ??
+        const [];
+  }
+
+  Future<String?> getCurrentDns() =>
+      methodChannel.invokeMethod<String>('getCurrentDns');
+
+  Future<bool?> setQuickResponse(bool enabled) async {
+    return await methodChannel.invokeMethod<bool>('setQuickResponse', {
+      'enabled': enabled,
+    });
+  }
+
+  Future<bool> isServiceEngineRunning() async {
+    return await methodChannel.invokeMethod<bool>('isServiceEngineRunning') ??
+        false;
+  }
+
+  Future<bool> getStatus() async {
+    return await methodChannel.invokeMethod<bool>('status') ?? false;
+  }
+
+  Future<void> updateNotificationSpeed(
+    String profileName,
+    String speedInfo,
+  ) async {
+    await methodChannel.invokeMethod<void>('updateNotificationSpeed', {
+      'profileName': profileName,
+      'speedInfo': speedInfo,
+    });
+  }
+
+  Future<void> restoreNotification() async {
+    await methodChannel.invokeMethod<void>('restoreNotification');
+  }
+
+  Future<bool?> setHighPriorityNotification(bool enabled) async {
     return await methodChannel.invokeMethod<bool>(
-          'start',
-          ++_commandRevision,
-        ) ??
-        false;
+      'setHighPriorityNotification',
+      {'enabled': enabled},
+    );
   }
 
-  Future<bool> stop() async {
-    _startRequested = false;
-    return await methodChannel.invokeMethod<bool>('stop', ++_commandRevision) ??
-        false;
-  }
-
-  Future<String> init() async {
-    return await methodChannel.invokeMethod<String>('init') ?? '';
-  }
-
-  Future<String> syncState(SharedState state) async {
-    return await methodChannel.invokeMethod<String>(
-          'syncState',
-          json.encode(state),
-        ) ??
-        '';
-  }
-
-  Future<bool> shutdown() async {
-    return await methodChannel.invokeMethod<bool>('shutdown') ?? true;
-  }
-
-  Future<DateTime?> getRunTime() async {
-    final ms = await methodChannel.invokeMethod<int>('getRunTime') ?? 0;
-    if (ms == 0) {
-      return null;
-    }
-    return DateTime.fromMillisecondsSinceEpoch(ms);
-  }
-
-  bool get hasListeners {
-    return _listeners.isNotEmpty;
-  }
-
-  void addListener(ServiceListener listener) {
-    _listeners.add(listener);
-  }
-
-  void removeListener(ServiceListener listener) {
-    _listeners.remove(listener);
-  }
+  Future<bool?> reconnectIpc() =>
+      methodChannel.invokeMethod<bool>('reconnectIpc');
 }
 
-Service? get service => system.isAndroid ? Service() : null;
+Service? get service =>
+    system.isAndroid && !globalState.isService ? Service() : null;

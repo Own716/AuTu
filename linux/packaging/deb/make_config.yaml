@@ -1,0 +1,42 @@
+display_name: AuTu
+package_name: AuTu
+maintainer:
+  name: appshub
+  email: appshubcc@gmail.com
+
+priority: optional
+section: x11
+installed_size: 6604
+essential: false
+icon: ./assets/images/icon.png
+
+dependencies:
+  - libayatana-appindicator3-dev
+  - libkeybinder-3.0-dev
+  - libcap2-bin
+
+keywords:
+  - AuTu
+  - Clash
+  - ClashMeta
+  - Mihomo
+  - Proxy
+
+generic_name: AuTu
+
+categories:
+  - Network
+
+startup_notify: true
+startup_wm_class: com.outo.app
+
+extra_files:
+  linux/packaging/polkit/90-bettbox.rules: usr/share/polkit-1/rules.d/90-bettbox.rules
+
+postinstall_scripts:
+  - |
+    CORE_PATH="/usr/share/AuTu/AuTuCore"
+    if [ -f "$CORE_PATH" ]; then
+      setcap 'cap_net_admin,cap_net_bind_service,cap_net_raw=+ep' "$CORE_PATH" && sync
+    fi
+    rm -f /etc/polkit-1/rules.d/90-bettbox.rules /etc/polkit-1/rules.d/99-bettbox.rules /usr/share/polkit-1/rules.d/99-bettbox.rules
